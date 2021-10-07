@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 ########################################################################
-# PETRUS/SRC/Corrections.py:
+# PETRUS/SRC/Perf.py:
 # This is the Performances Module of PETRUS tool
 #
 #  Project:        PETRUS
-#  File:           Corrections.py
+#  File:           Perf.py
 #  Date(YY/MM/DD): 16/02/21
 #
 #  Author: GNSS Academy

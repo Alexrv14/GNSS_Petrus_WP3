@@ -22,6 +22,7 @@
 
 # Import External and Internal functions and Libraries
 #----------------------------------------------------------------------
+from datetime import date
 import sys, os
 from collections import OrderedDict
 from yaml import dump
@@ -41,7 +42,7 @@ from InputOutput import CSNEPOCHS
 from InputOutput import ObsIdx
 from Preprocessing import runPreProcMeas
 from Corrections import runCorrectMeas
-from Svpt import computeSpvtSolution
+from Spvt import computeSpvtSolution
 from COMMON.Dates import convertJulianDay2YearMonthDay
 from COMMON.Dates import convertYearMonthDay2Doy
 from PreprocessingPlots import generatePreproPlots
@@ -226,7 +227,7 @@ for Rcvr in RcvrInfo.keys():
                         # Correct measurements and estimate the variances with SBAS information
                         # ----------------------------------------------------------
                         CorrInfo = runCorrectMeas(Conf, RcvrInfo[Rcvr], PreproObsInfo, SatInfo, LosInfo)
-
+                    
                         # If CORR outputs are requested
                         if Conf["CORR_OUT"] == 1:
                             # Generate output file
@@ -234,12 +235,12 @@ for Rcvr in RcvrInfo.keys():
 
                         # Compute the spvt solution
                         # ----------------------------------------------------------
-                        # PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo)
+                        PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo)
 
                         # If SPVT outputs are requested
-                        # if Conf["SPVT_OUT"] == 1:
+                        if Conf["SPVT_OUT"] == 1:
                             # Generate output file
-                            # generatePosFile(fpos, PosInfo, Rcvr)
+                            generatePosFile(fpos, PosInfo, Rcvr)
 
                 # End if ObsInfo != []:
                 else:
@@ -306,7 +307,6 @@ for Rcvr in RcvrInfo.keys():
 print( '\n------------------------------------')
 print( '--> END OF PETRUS ANALYSIS')
 print( '------------------------------------')
-
 
 #######################################################
 # End of Petrus.py

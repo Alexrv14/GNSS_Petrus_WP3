@@ -1404,7 +1404,7 @@ def generateCorrFile(fcorr, CorrInfo):
 
         fcorr.write("\n")
 
-# End of generatePreproFile
+# End of generateCorrFile
 
 def generatePosFile(fpos, PosInfo, Rcvr):
 
@@ -1423,35 +1423,36 @@ def generatePosFile(fpos, PosInfo, Rcvr):
     # =======
     # Nothing
 
-    # Prepare outputs
-    Outputs = OrderedDict({})
-    Outputs["SOD"] = PosInfo["Sod"]
-    Outputs["DOY"] = PosInfo["Doy"]
-    Outputs["RCVR"] = Rcvr
-    Outputs["LON"] = PosInfo["Lon"]
-    Outputs["LAT"] = PosInfo["Lat"]
-    Outputs["ALT"] = PosInfo["Alt"]
-    Outputs["CLK"] = PosInfo["Clk"]
-    Outputs["SOL"] = PosInfo["Sol"]
-    Outputs["NSV"] = PosInfo["NumSatVis"]
-    Outputs["NSV-PA"] = PosInfo["NumSatPa"]
-    Outputs["HPE"] = PosInfo["HpePa"]
-    Outputs["VPE"] = PosInfo["VpePa"]
-    Outputs["EPE"] = PosInfo["EpePa"]
-    Outputs["NPE"] = PosInfo["NpePa"]
-    Outputs["HPL"] = PosInfo["HplPa"]
-    Outputs["VPL"] = PosInfo["VplPa"]
-    Outputs["HSI"] = PosInfo["HsiPa"]
-    Outputs["VSI"] = PosInfo["VsiPa"]
-    Outputs["HDOP"] = PosInfo["HdopPa"]
-    Outputs["VDOP"] = PosInfo["VdopPa"]
-    Outputs["PDOP"] = PosInfo["PdopPa"]
-    Outputs["TDOP"] = PosInfo["TdopPa"]
+    if len(PosInfo) > 0:
+        # Prepare outputs
+        Outputs = OrderedDict({})
+        Outputs["SOD"] = PosInfo["Sod"]
+        Outputs["DOY"] = PosInfo["Doy"]
+        Outputs["RCVR"] = Rcvr
+        Outputs["LON"] = PosInfo["Lon"]
+        Outputs["LAT"] = PosInfo["Lat"]
+        Outputs["ALT"] = PosInfo["Alt"]
+        Outputs["CLK"] = PosInfo["Clk"]
+        Outputs["SOL"] = PosInfo["Sol"]
+        Outputs["NSV"] = PosInfo["NumSatVis"]
+        Outputs["NSV-PA"] = PosInfo["NumSatPa"]
+        Outputs["HPE"] = PosInfo["HpePa"]
+        Outputs["VPE"] = PosInfo["VpePa"]
+        Outputs["EPE"] = PosInfo["EpePa"]
+        Outputs["NPE"] = PosInfo["NpePa"]
+        Outputs["HPL"] = PosInfo["HplPa"]
+        Outputs["VPL"] = PosInfo["VplPa"]
+        Outputs["HSI"] = PosInfo["HsiPa"]
+        Outputs["VSI"] = PosInfo["VsiPa"]
+        Outputs["HDOP"] = PosInfo["HdopPa"]
+        Outputs["VDOP"] = PosInfo["VdopPa"]
+        Outputs["PDOP"] = PosInfo["PdopPa"]
+        Outputs["TDOP"] = PosInfo["TdopPa"]
 
-    # Write line
-    for i, result in enumerate(Outputs):
-        fpos.write(((PosFmt[i] + " ") % Outputs[result]))
+        # Write line
+        for i, result in enumerate(Outputs):
+            fpos.write(((PosFmt[i] + " ") % Outputs[result]))
 
-    fpos.write("\n")
+        fpos.write("\n")
 
-# End of generatePreproFile
+# End of generatePosFile
