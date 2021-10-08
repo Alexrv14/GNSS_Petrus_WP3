@@ -220,10 +220,10 @@ CorrIdx["ENTtoGPS"]=26
 
 # SVPT
 # Header
-PosHdr = "#SOD  DOY RCVR LON       LAT       ALT       CLK           SOL NVS NSV-PA HPE     VPE     EPE     NPE     HPL     VPL     HSI     VSI     HDOP    VDOP    PDOP    TDOP \n"
+PosHdr = "#SOD  DOY RCVR LON       LAT       ALT       CLK           SOL NVS NVS-SOL HPE     VPE     EPE     NPE     HPL     VPL     HSI     VSI     HDOP    VDOP    PDOP    TDOP \n"
 
 # Line format
-PosFmt = "%05d %03d %s %9.5f %9.5f %9.3f %14.3f %3d %3d %3d %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f".split()
+PosFmt = "%05d %03d %s %9.5f %9.5f %9.3f %14.3f %3d %3d %6d %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f".split()
 
 # File columns
 PosIdx = OrderedDict({})
@@ -236,7 +236,7 @@ PosIdx["ALT"]=5
 PosIdx["CLK"]=6
 PosIdx["SOL"]=7
 PosIdx["NVS"]=8
-PosIdx["NSV-PA"]=9
+PosIdx["NVS-SOL"]=9
 PosIdx["HPE"]=10
 PosIdx["VPE"]=11
 PosIdx["EPE"]=12
@@ -1435,19 +1435,19 @@ def generatePosFile(fpos, PosInfo, Rcvr):
         Outputs["CLK"] = PosInfo["Clk"]
         Outputs["SOL"] = PosInfo["Sol"]
         Outputs["NSV"] = PosInfo["NumSatVis"]
-        Outputs["NSV-PA"] = PosInfo["NumSatPa"]
-        Outputs["HPE"] = PosInfo["HpePa"]
-        Outputs["VPE"] = PosInfo["VpePa"]
-        Outputs["EPE"] = PosInfo["EpePa"]
-        Outputs["NPE"] = PosInfo["NpePa"]
-        Outputs["HPL"] = PosInfo["HplPa"]
-        Outputs["VPL"] = PosInfo["VplPa"]
-        Outputs["HSI"] = PosInfo["HsiPa"]
-        Outputs["VSI"] = PosInfo["VsiPa"]
-        Outputs["HDOP"] = PosInfo["HdopPa"]
-        Outputs["VDOP"] = PosInfo["VdopPa"]
-        Outputs["PDOP"] = PosInfo["PdopPa"]
-        Outputs["TDOP"] = PosInfo["TdopPa"]
+        Outputs["NSV-SOL"] = PosInfo["NumSatSol"]
+        Outputs["HPE"] = PosInfo["Hpe"]
+        Outputs["VPE"] = PosInfo["Vpe"]
+        Outputs["EPE"] = PosInfo["Epe"]
+        Outputs["NPE"] = PosInfo["Npe"]
+        Outputs["HPL"] = PosInfo["Hpl"]
+        Outputs["VPL"] = PosInfo["Vpl"]
+        Outputs["HSI"] = PosInfo["Hsi"]
+        Outputs["VSI"] = PosInfo["Vsi"]
+        Outputs["HDOP"] = PosInfo["Hdop"]
+        Outputs["VDOP"] = PosInfo["Vdop"]
+        Outputs["PDOP"] = PosInfo["Pdop"]
+        Outputs["TDOP"] = PosInfo["Tdop"]
 
         # Write line
         for i, result in enumerate(Outputs):
