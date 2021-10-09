@@ -19,16 +19,16 @@
 
 # Import External and Internal functions and Libraries
 #----------------------------------------------------------------------
-import sys, os
 
-from COMMON.Wlsq import WlsqComputation
+import sys, os
 # Add path to find all modules
 Common = os.path.dirname(os.path.dirname(
     os.path.abspath(sys.argv[0]))) + '/COMMON'
 sys.path.insert(0, Common)
 from collections import OrderedDict
 from InputOutput import RcvrIdx
-from COMMON import Coordinates, GnssConstants
+from COMMON import GnssConstants
+from COMMON.Wlsq import wlsqComputation
 import numpy as np
 
 # Spvt internal functions
@@ -58,22 +58,20 @@ def buildGMatrix(SatCorrInfo):
 
     return XComp, YComp, ZComp, BComp
 
-def computeDops(GMatrix):
+def computeDops(GMatrix, PosInfo):
 
     # Purpose: Compute the DOP matrix Q in the ENU reference frame for the spvt computation, as well as 
     # the HDOP, VDOP, PDOP and TDOP
 
     # Compute the DOP matrix
     QMatrix = np.linalg.inv(np.dot(GMatrix.T, GMatrix))
+    QDiag = np.diag(QMatrix)
 
     # Compute the DOPS
-    QDiag = np.diag(QMatrix)
-    HDop = np.sqrt(QDiag[0]**2 + QDiag[1]**2)
-    VDop = QDiag[2]
-    PDop = np.sqrt(QDiag[0]**2 + QDiag[1]**2 + QDiag[2]**2)
-    TDop = QDiag[3]
-
-    return HDop, VDop, PDop, TDop
+    PosInfo["Hdop"] = np.sqrt(QDiag[0]**2 + QDiag[1]**2)
+    PosInfo["Vdop"] = QDiag[2]
+    PosInfo["Pdop"] = np.sqrt(QDiag[0]**2 + QDiag[1]**2 + QDiag[2]**2)
+    PosInfo["Tdop"] = QDiag[3]
 
 def buildSMatrix(GMatrix, WMatrix):
 
@@ -82,6 +80,19 @@ def buildSMatrix(GMatrix, WMatrix):
     SMatrix = np.linalg.multi_dot([np.linalg.inv(np.linalg.multi_dot([GMatrix.T, WMatrix, GMatrix])), GMatrix.T, WMatrix])
 
     return SMatrix
+
+def computeProtectionLevels(GMatrix, WMatrix, PosInfo):
+
+    # Purpose: Compute the protection levels in the ENU reference frame
+
+    # Compute the D Matrix
+    DMatrix = np.linalg.inv(np.linalg.multi_dot([GMatrix.T, WMatrix, GMatrix]))
+    DDiag = np.diag(DMatrix)
+    DMajor = np.sqrt((DDiag[0] + DDiag[1])/2 + np.sqrt(((DDiag[0] - DDiag[1])/2)**2 + (DMatrix[0][1])**2))
+
+    # Compute the protection levels
+    PosInfo["Hpl"] = DMajor*GnssConstants.MOPS_KH_PA
+    PosInfo["Vpl"] = np.sqrt(DDiag[2])*GnssConstants.MOPS_KV_PA
 
 def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
 
@@ -130,7 +141,7 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
 
     # Initialize some variables
     NumSatSol = 0
-    GMatrix = []
+    GMatrixRows = []
     Weights = []
 
     # Check if corrected information is available at current epoch
@@ -174,7 +185,7 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
                 # Update number of available satellites for PA
                 NumSatSol = NumSatSol + 1
                 # Compute row of the geometry matrix G for satellite
-                GMatrix.append(buildGMatrix(SatCorrInfo))
+                GMatrixRows.append(buildGMatrix(SatCorrInfo))
                 # Compute diagonal element of the weighting matrix W for satellite
                 Weights.append(buildWMatrix(SatCorrInfo))
             # If the satellite is only available for NPA and NPA mode is activated
@@ -182,10 +193,12 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
                 # Update number of available satellites for NPA
                 NumSatSol = NumSatSol + 1
                 # Compute row of the geometry matrix G for satellite
-                GMatrix.append(buildGMatrix(SatCorrInfo))
+                GMatrixRows.append(buildGMatrix(SatCorrInfo))
                 # Compute diagonal element of the weighting matrix W for satellite
                 Weights.append(buildWMatrix(SatCorrInfo))
     
+        # End of for SatCorrInfo in CorrInfo.values():
+        
         # Get number of visible satellites
         PosInfo["NumSatVis"] = len(CorrInfo)
         # Get number of satellites used to compute the solution
@@ -195,22 +208,30 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
         # ----------------------------------------------------------
         # Compute inputs required for the computation
         # Get full geometry matrix G
-        GMatrix = np.reshape(GMatrix,(NumSatSol,4))
+        GMatrix = np.reshape(GMatrixRows,(NumSatSol,4))
         # Get full weighting matrix W
         WMatrix = np.diag(Weights)
     
         # Check the number of available satellites for computing the solution (PA or NPA)
         if NumSatSol >= GnssConstants.MIN_NUM_SATS_PVT:
-            PosInfo["Hdop"], PosInfo["Vdop"], PosInfo["Pdop"], PosInfo["Tdop"] = computeDops(GMatrix)
+            # Compute DOPS
+            computeDops(GMatrix, PosInfo)
             if PosInfo["Pdop"] < float(Conf["PDOP_MAX"]):
                 # Compute the S matrix
                 SMatrix = buildSMatrix(GMatrix, WMatrix)
                 # Call WLSQ function
-                WlsqComputation(Conf, CorrInfo, PosInfo, SMatrix)
+                wlsqComputation(Conf, CorrInfo, PosInfo, SMatrix)
+                # Compute protection levels
+                computeProtectionLevels(GMatrix, WMatrix, PosInfo)
 
-        # End of PosInfo initialization
-
-    # End of if(len(CorrInfo) > 0):
+            # End of if(PosInfo["Pdop"] < float(Conf["PDOP_MAX"])):
+        
+        # End if(NumSatSol >= GnssConstants.MIN_NUM_SATS_PVT):
     
     return PosInfo
+
+    # End of computespvtsolution:
     
+    ########################################################################
+    # END OF SVPT FUNCTIONS MODULE
+    ########################################################################
