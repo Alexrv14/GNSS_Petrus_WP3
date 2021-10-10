@@ -18,7 +18,7 @@
 ########################################################################
 
 # Import External and Internal functions and Libraries
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 import sys, os
 # Add path to find all modules
@@ -32,7 +32,7 @@ from COMMON.Wlsq import wlsqComputation
 import numpy as np
 
 # Spvt internal functions
-#-----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def buildWMatrix(SatCorrInfo):
 
@@ -81,18 +81,25 @@ def buildSMatrix(GMatrix, WMatrix):
 
     return SMatrix
 
-def computeProtectionLevels(GMatrix, WMatrix, PosInfo):
+def computeProtectionLevels(Conf, GMatrix, WMatrix, PosInfo):
 
     # Purpose: Compute the protection levels in the ENU reference frame
 
     # Compute the D Matrix
     DMatrix = np.linalg.inv(np.linalg.multi_dot([GMatrix.T, WMatrix, GMatrix]))
-    DDiag = np.diag(DMatrix)
-    DMajor = np.sqrt((DDiag[0] + DDiag[1])/2 + np.sqrt(((DDiag[0] - DDiag[1])/2)**2 + (DMatrix[0][1])**2))
+    DDiag1 = np.diag(DMatrix)
+    DDiag2 = np.diag(DMatrix, k = 1)
 
-    # Compute the protection levels
-    PosInfo["Hpl"] = DMajor*GnssConstants.MOPS_KH_PA
-    PosInfo["Vpl"] = np.sqrt(DDiag[2])*GnssConstants.MOPS_KV_PA
+    # Compute the protection levels 
+    if Conf["SBAS_IONO_NPA"] == 0:
+        PosInfo["Hpl"] = np.sqrt(((DDiag1[0] + DDiag1[1])/2) + np.sqrt(((DDiag1[0] - DDiag1[1])/2)**2 + DDiag2[0]**2))*GnssConstants.MOPS_KH_PA
+        PosInfo["Vpl"] = np.sqrt(DDiag1[2])*GnssConstants.MOPS_KV_PA
+    elif Conf["SBAS_IONO_NPA"] == 1:
+        PosInfo["Hpl"] = np.sqrt(((DDiag1[0] + DDiag1[1])/2) + np.sqrt(((DDiag1[0] - DDiag1[1])/2)**2 + DDiag2[0]**2))*GnssConstants.MOPS_KH_NPA
+        PosInfo["Vpl"] = np.sqrt(DDiag1[2])*GnssConstants.MOPS_KV_NPA
+
+# Spvt main function
+# -----------------------------------------------------------------------
 
 def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
 
@@ -205,7 +212,7 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
         PosInfo["NumSatSol"] = NumSatSol
 
         # Svpt computation
-        # ----------------------------------------------------------
+        # ----------------------------------------------------------------------
         # Compute inputs required for the computation
         # Get full geometry matrix G
         GMatrix = np.reshape(GMatrixRows,(NumSatSol,4))
@@ -222,7 +229,11 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
                 # Call WLSQ function
                 wlsqComputation(Conf, CorrInfo, PosInfo, SMatrix)
                 # Compute protection levels
-                computeProtectionLevels(GMatrix, WMatrix, PosInfo)
+                computeProtectionLevels(Conf, GMatrix, WMatrix, PosInfo)
+                # Compute safety indexes
+                PosInfo["Hsi"] = PosInfo["Hpe"]/PosInfo["Hpl"]
+                PosInfo["Vsi"] = PosInfo["Vpe"]/PosInfo["Vpl"]
+                # Update intermediate performances
 
             # End of if(PosInfo["Pdop"] < float(Conf["PDOP_MAX"])):
         
