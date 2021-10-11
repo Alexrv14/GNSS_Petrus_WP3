@@ -234,14 +234,24 @@ for Rcvr in RcvrInfo.keys():
                             # Generate output file
                             generateCorrFile(fcorr, CorrInfo)
 
-                        # Compute the spvt solution
+                        # Compute the spvt solution (PA and NPA)
                         # ----------------------------------------------------------
-                        PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo)
+                        # If only PA mode activated
+                        PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo, Mode = "PA")
 
                         # If SPVT outputs are requested
                         if Conf["SPVT_OUT"] == 1:
                             # Generate output file
                             generatePosFile(fpos, PosInfo, Rcvr)
+
+                        # If NPA mode activated
+                        if Conf["NPA"][0] == 1:
+                            PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo, Mode = "NPA")
+
+                            # If SPVT outputs are requested
+                            if Conf["SPVT_OUT"] == 1:
+                                # Generate output file
+                                generatePosFile(fpos, PosInfo, Rcvr)
 
                 # End if ObsInfo != []:
                 else:
@@ -284,7 +294,12 @@ for Rcvr in RcvrInfo.keys():
             print("INFO: Reading file: %s and generating POS figures..." % PosFile)
 
             # Generate POS plots
-            generatePosPlots(Conf, PosFile)
+            # If only PA mode activated
+            generatePosPlots(PosFile, Mode = "PA")
+
+            # If NPA mode also activated
+            if Conf["NPA"][0] == 1:
+                generatePosPlots(PosFile, Mode = "NPA")
         
         # If PERF outputs are requested
         # if Conf["PERF_OUT"] == 1:

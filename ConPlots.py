@@ -58,11 +58,11 @@ ConfCorr["PLOT_SIGMA_UERE_STATS"] = 0
 
 # Position plots configuration flags
 ConfPos = OrderedDict({})
-ConfPos["PLOT_DOP"] = 0
-ConfPos["PLOT_ERR_vs_LIM"] = 0
-ConfPos["PLOT_ERROR"] = 0
-ConfPos["PLOT_HPE_vs_HDOP"] = 0
-ConfPos["PLOT_SAF_INDEX"] = 0
+ConfPos["PLOT_DOP"] = 1
+ConfPos["PLOT_ERR_vs_LIM"] = 1
+ConfPos["PLOT_ERROR"] = 1
+ConfPos["PLOT_HPE_vs_HDOP"] = 1
+ConfPos["PLOT_SAF_INDEX"] = 1
 ConfPos["PLOT_HOR_STANDFORD"] = 1
-ConfPos["PLOT_VER_STANDFORD"] = 0
+ConfPos["PLOT_VER_STANDFORD"] = 1
 

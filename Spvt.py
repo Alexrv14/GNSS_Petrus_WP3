@@ -81,7 +81,7 @@ def buildSMatrix(GMatrix, WMatrix):
 
     return SMatrix
 
-def computeProtectionLevels(Conf, GMatrix, WMatrix, PosInfo):
+def computeProtectionLevels(GMatrix, WMatrix, PosInfo, Mode):
 
     # Purpose: Compute the protection levels in the ENU reference frame
 
@@ -91,17 +91,17 @@ def computeProtectionLevels(Conf, GMatrix, WMatrix, PosInfo):
     DDiag2 = np.diag(DMatrix, k = 1)
 
     # Compute the protection levels 
-    if Conf["SBAS_IONO_NPA"] == 0:
+    if Mode == "PA":
         PosInfo["Hpl"] = np.sqrt(((DDiag1[0] + DDiag1[1])/2) + np.sqrt(((DDiag1[0] - DDiag1[1])/2)**2 + DDiag2[0]**2))*GnssConstants.MOPS_KH_PA
         PosInfo["Vpl"] = np.sqrt(DDiag1[2])*GnssConstants.MOPS_KV_PA
-    elif Conf["SBAS_IONO_NPA"] == 1:
+    elif Mode == "NPA":
         PosInfo["Hpl"] = np.sqrt(((DDiag1[0] + DDiag1[1])/2) + np.sqrt(((DDiag1[0] - DDiag1[1])/2)**2 + DDiag2[0]**2))*GnssConstants.MOPS_KH_NPA
         PosInfo["Vpl"] = np.sqrt(DDiag1[2])*GnssConstants.MOPS_KV_NPA
 
 # Spvt main function
 # -----------------------------------------------------------------------
 
-def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
+def computeSpvtSolution(Conf, RcvrInfo, CorrInfo, Mode):
 
     # Purpose: Compute the svpt solution
 
@@ -196,9 +196,9 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
                 # Compute diagonal element of the weighting matrix W for satellite
                 Weights.append(buildWMatrix(SatCorrInfo))
             # If the satellite is only available for NPA and NPA mode is activated
-            if SatCorrInfo["Flag"] == 2 and Conf["SBAS_IONO_NPA"] == 1:
+            if SatCorrInfo["Flag"] == 2 and Mode == "NPA":
                 # Update number of available satellites for NPA
-                NumSatSol = NumSatSol + 1
+                NumSatSolNPa = NumSatSolNPa + 1
                 # Compute row of the geometry matrix G for satellite
                 GMatrixRows.append(buildGMatrix(SatCorrInfo))
                 # Compute diagonal element of the weighting matrix W for satellite
@@ -218,8 +218,8 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
         GMatrix = np.reshape(GMatrixRows,(NumSatSol,4))
         # Get full weighting matrix W
         WMatrix = np.diag(Weights)
-    
-        # Check the number of available satellites for computing the solution (PA or NPA)
+
+        # Check the number of available satellites for computing the solution
         if NumSatSol >= GnssConstants.MIN_NUM_SATS_PVT:
             # Compute DOPS
             computeDops(GMatrix, PosInfo)
@@ -227,9 +227,9 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo):
                 # Compute the S matrix
                 SMatrix = buildSMatrix(GMatrix, WMatrix)
                 # Call WLSQ function
-                wlsqComputation(Conf, CorrInfo, PosInfo, SMatrix)
+                wlsqComputation(Conf, CorrInfo, PosInfo, SMatrix, Mode)
                 # Compute protection levels
-                computeProtectionLevels(Conf, GMatrix, WMatrix, PosInfo)
+                computeProtectionLevels(GMatrix, WMatrix, PosInfo, Mode)
                 # Compute safety indexes
                 PosInfo["Hsi"] = PosInfo["Hpe"]/PosInfo["Hpl"]
                 PosInfo["Vsi"] = PosInfo["Vpe"]/PosInfo["Vpl"]

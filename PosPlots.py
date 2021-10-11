@@ -28,7 +28,7 @@ from ConPlots import ConfPos
 import numpy as np
 from scipy.stats import gaussian_kde
 
-def initPlot(PosFile, PlotConf, Title, Label):
+def initPlot(PosFile, PlotConf, Title, Label, Sol):
     
     # Compute information from PosFile
     PosFileName = os.path.basename(PosFile)
@@ -42,18 +42,18 @@ def initPlot(PosFile, PlotConf, Title, Label):
     # Dump information into PlotConf
     PlotConf["xLabel"] = "Hour of Day %s" % Doy
 
-    PlotConf["Title"] = "%s from %s on Year %s"\
-        " DoY %s" % (Title, Rcvr, Year, Doy)
+    PlotConf["Title"] = "%s in %s from %s on Year %s"\
+        " DoY %s" % (Title, Sol, Rcvr, Year, Doy)
 
     PlotConf["Path"] = sys.argv[1] + '/OUT/SPVT/Figures/%s/' % Label + \
-        '%s_%s_Y%sD%s.png' % (Label, Rcvr, Year, Doy)
+        '%s_%s_%s_Y%sD%s.png' % (Label, Sol, Rcvr, Year, Doy)
 
 # Plot DOPS
 def plotDops(PosFile, PosData, Sol):
 
     # Graph settings definition
     PlotConf = {}
-    initPlot(PosFile, PlotConf, "DOPS", "DOPS_vs_TIME")
+    initPlot(PosFile, PlotConf, "DOPS", "DOPS_vs_TIME", Sol[0])
 
     PlotConf["Type"] = "Lines"
     PlotConf["FigSize"] = (10.4,7.6)
@@ -93,7 +93,7 @@ def plotErrorVsLimit(PosFile, PosData, Sol):
 
     # Graph settings definition
     PlotConf = {}
-    initPlot(PosFile, PlotConf, "PE vs PL in " + Sol[0], "POS_ERROR_vs_LIMIT")
+    initPlot(PosFile, PlotConf, "PE vs PL", "POS_ERROR_vs_LIMIT", Sol[0])
 
     PlotConf["Type"] = "Lines"
     PlotConf["FigSize"] = (10.4,7.6)
@@ -125,7 +125,7 @@ def plotErrors(PosFile, PosData, Sol):
 
     # Graph settings definition
     PlotConf = {}
-    initPlot(PosFile, PlotConf, "Position Errors in " + Sol[0], "POS_ERROR_vs_TIME")
+    initPlot(PosFile, PlotConf, "Position Errors", "POS_ERROR_vs_TIME", Sol[0])
 
     PlotConf["Type"] = "Lines"
     PlotConf["FigSize"] = (10.4,7.6)
@@ -157,7 +157,7 @@ def plotHorizontalPE(PosFile, PosData, Sol):
 
     # Graph settings definition
     PlotConf = {}
-    initPlot(PosFile, PlotConf, "HPE vs DOP in " + Sol[0], "HPE_vs_HDOP")
+    initPlot(PosFile, PlotConf, "HPE vs DOP", "HPE_vs_HDOP", Sol[0])
 
     PlotConf["Type"] = "Lines"
     PlotConf["FigSize"] = (8.4,7.6)
@@ -195,7 +195,7 @@ def plotSafeIndex(PosFile, PosData, Sol):
 
     # Graph settings definition
     PlotConf = {}
-    initPlot(PosFile, PlotConf, "Safety Index in " + Sol[0], "SAFE_INDEX_vs_TIME")
+    initPlot(PosFile, PlotConf, "Safety Index", "SAFE_INDEX_vs_TIME", Sol[0])
 
     PlotConf["Type"] = "Lines"
     PlotConf["FigSize"] = (10.4,7.6)
@@ -228,21 +228,30 @@ def plotHorStand(PosFile, PosData, Sol):
 
     # Graph settings definition
     PlotConf = {}
-    initPlot(PosFile, PlotConf, "Horizontal Standford Diagram in " + Sol[0], "HOR_STANDFORD_DIAGRAM")
+    initPlot(PosFile, PlotConf, "Horizontal Standford Diagram", "HOR_STANDFORD_DIAGRAM", Sol[0])
 
     PlotConf["Type"] = "Lines"
     PlotConf["FigSize"] = (8.4,7.6)
 
     PlotConf["xLabel"] = "HPE [m]"
-    PlotConf["xLim"] = [0,50]
     PlotConf["yLabel"] = "HPL [m]"
-    PlotConf["yLim"] = [0,50]
+
+    if Sol[0] == "PA":
+        PlotConf["xLim"] = [0,50]
+        PlotConf["yLim"] = [0,50]
+        PlotConf["HLine"] = [(GnssConstants.LPV200_HAL, 0, 50), (GnssConstants.APVI_HAL, 0, 50)]
+        PlotConf["VLine"] = [(GnssConstants.LPV200_HAL, 0, 50), (GnssConstants.APVI_HAL, 0, 50)]
+        PlotConf["SLine"] = [np.array([0,50]), np.array([0,50])]
+
+    if Sol[0] == "NPA":
+        PlotConf["xLim"] = [0,700]
+        PlotConf["yLim"] = [0,700]
+        PlotConf["HLine"] = [(GnssConstants.NPA_HAL, 0, 700)]
+        PlotConf["VLine"] = [(GnssConstants.NPA_HAL, 0, 700)]
+        PlotConf["SLine"] = [np.array([0,700]), np.array([0,700])]
 
     PlotConf["Grid"] = True
-    PlotConf["HLine"] = [(GnssConstants.LPV200_HAL, 0, 50), (GnssConstants.APVI_VAL, 0, 50)]
-    PlotConf["VLine"] = [(GnssConstants.LPV200_HAL, 0, 50), (GnssConstants.APVI_VAL, 0, 50)]
-    PlotConf["SLine"] = [np.array([0,50]), np.array([0,50])]
-
+    
     PlotConf["Marker"] = '.'
     PlotConf["LineWidth"] = 1.5
 
@@ -281,21 +290,28 @@ def plotVerStand(PosFile, PosData, Sol):
 
     # Graph settings definition
     PlotConf = {}
-    initPlot(PosFile, PlotConf, "Vertical Standford Diagram in " + Sol[0], "VER_STANDFORD_DIAGRAM")
+    initPlot(PosFile, PlotConf, "Vertical Standford Diagram", "VER_STANDFORD_DIAGRAM", Sol[0])
 
     PlotConf["Type"] = "Lines"
     PlotConf["FigSize"] = (8.4,7.6)
 
     PlotConf["xLabel"] = "VPE [m]"
-    PlotConf["xLim"] = [0,60]
     PlotConf["yLabel"] = "VPL [m]"
-    PlotConf["yLim"] = [0,60]
+
+    if Sol[0] == "PA":
+        PlotConf["xLim"] = [0,60]
+        PlotConf["yLim"] = [0,60]
+        PlotConf["HLine"] = [(GnssConstants.LPV200_VAL, 0, 60), (GnssConstants.APVI_VAL, 0, 60)]
+        PlotConf["VLine"] = [(GnssConstants.LPV200_VAL, 0, 60), (GnssConstants.APVI_VAL, 0, 60)]
+        PlotConf["SLine"] = [np.array([0,60]), np.array([0,60])]
+
+    if Sol[0] == "NPA":
+        PlotConf["xLim"] = [0,1000]
+        PlotConf["yLim"] = [0,1000]
+        PlotConf["SLine"] = [np.array([0,1000]), np.array([0,1000])]
 
     PlotConf["Grid"] = True
-    PlotConf["HLine"] = [(GnssConstants.LPV200_VAL, 0, 60), (GnssConstants.APVI_VAL, 0, 60)]
-    PlotConf["VLine"] = [(GnssConstants.LPV200_VAL, 0, 60), (GnssConstants.APVI_VAL, 0, 60)]
-    PlotConf["SLine"] = [np.array([0,60]), np.array([0,60])]
-
+    
     PlotConf["Marker"] = '.'
     PlotConf["LineWidth"] = 1.5
 
@@ -329,7 +345,7 @@ def plotVerStand(PosFile, PosData, Sol):
     # Call generatePlot from Plots library
     generatePlot(PlotConf)
 
-def generatePosPlots(Conf, PosFile):
+def generatePosPlots(PosFile, Mode):
     
     # Purpose: generate output plots regarding svpt results
 
@@ -346,10 +362,10 @@ def generatePosPlots(Conf, PosFile):
 
     # Check the selected mode (PA or NPA)
     # ----------------------------------------------------------
-    if Conf["SBAS_IONO_NPA"] == 0:
-        Sol = ["PA", 1]
-    elif Conf["SBAS_IONO_NPA"] == 1:
-        Sol = ["NPA", 2]
+    if Mode == "PA":
+        Sol = [Mode, 1]
+    if Mode == "NPA":
+        Sol = [Mode, 2]
 
     # ----------------------------------------------------------
     # PLOTTING FUNCTIONS
@@ -362,7 +378,7 @@ def generatePosPlots(Conf, PosFile):
         PosData = read_csv(PosFile, delim_whitespace=True, skiprows=1, header=None,\
         usecols=[PosIdx["SOD"],PosIdx["NVS-SOL"],PosIdx["HDOP"],PosIdx["VDOP"],PosIdx["PDOP"],PosIdx["TDOP"],PosIdx["SOL"]])
 
-        print( 'Plot DOPS vs Time ...')
+        print( 'Plot DOPS vs Time in ' + Sol[0] + ' mode...')
       
         # Configure plot and call plot generation function
         plotDops(PosFile, PosData, Sol)
@@ -374,7 +390,7 @@ def generatePosPlots(Conf, PosFile):
         PosData = read_csv(PosFile, delim_whitespace=True, skiprows=1, header=None,\
         usecols=[PosIdx["SOD"],PosIdx["HPE"],PosIdx["VPE"],PosIdx["HPL"],PosIdx["VPL"],PosIdx["SOL"]])
 
-        print( 'Plot Position Errors vs Position Limits vs Time ...')
+        print( 'Plot Position Errors vs Position Limits vs Time in ' + Sol[0] + ' mode...')
       
         # Configure plot and call plot generation function
         plotErrorVsLimit(PosFile, PosData, Sol)
@@ -386,7 +402,7 @@ def generatePosPlots(Conf, PosFile):
         PosData = read_csv(PosFile, delim_whitespace=True, skiprows=1, header=None,\
         usecols=[PosIdx["SOD"],PosIdx["HPE"],PosIdx["VPE"],PosIdx["SOL"]])
 
-        print( 'Plot Position Errors vs Time ...')
+        print( 'Plot Position Errors vs Time in ' + Sol[0] + ' mode...')
       
         # Configure plot and call plot generation function
         plotErrors(PosFile, PosData, Sol)
@@ -398,7 +414,7 @@ def generatePosPlots(Conf, PosFile):
         PosData = read_csv(PosFile, delim_whitespace=True, skiprows=1, header=None,\
         usecols=[PosIdx["EPE"],PosIdx["NPE"],PosIdx["HDOP"],PosIdx["SOL"]])
 
-        print( 'Plot Horizontal Position Error vs HDOP...')
+        print( 'Plot Horizontal Position Error vs HDOP in ' + Sol[0] + ' mode...')
       
         # Configure plot and call plot generation function
         plotHorizontalPE(PosFile, PosData, Sol)
@@ -410,7 +426,7 @@ def generatePosPlots(Conf, PosFile):
         PosData = read_csv(PosFile, delim_whitespace=True, skiprows=1, header=None,\
         usecols=[PosIdx["SOD"],PosIdx["HSI"],PosIdx["VSI"],PosIdx["SOL"]])
 
-        print( 'Plot Safety Index vs Time...')
+        print( 'Plot Safety Index vs Time in ' + Sol[0] + ' mode...')
       
         # Configure plot and call plot generation function
         plotSafeIndex(PosFile, PosData, Sol)
@@ -422,7 +438,7 @@ def generatePosPlots(Conf, PosFile):
         PosData = read_csv(PosFile, delim_whitespace=True, skiprows=1, header=None,\
         usecols=[PosIdx["HPE"],PosIdx["HPL"],PosIdx["SOL"]])
 
-        print( 'Plot Horizontal Standford Diagram...')
+        print( 'Plot Horizontal Standford Diagram in ' + Sol[0] + ' mode...')
       
         # Configure plot and call plot generation function
         plotHorStand(PosFile, PosData, Sol)
@@ -434,7 +450,7 @@ def generatePosPlots(Conf, PosFile):
         PosData = read_csv(PosFile, delim_whitespace=True, skiprows=1, header=None,\
         usecols=[PosIdx["VPE"],PosIdx["VPL"],PosIdx["SOL"]])
 
-        print( 'Plot Vertical Standford Diagram...')
+        print( 'Plot Vertical Standford Diagram in ' + Sol[0] + ' mode...')
       
         # Configure plot and call plot generation function
         plotVerStand(PosFile, PosData, Sol)
