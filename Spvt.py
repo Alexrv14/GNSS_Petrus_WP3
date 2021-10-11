@@ -68,10 +68,10 @@ def computeDops(GMatrix, PosInfo):
     QDiag = np.diag(QMatrix)
 
     # Compute the DOPS
-    PosInfo["Hdop"] = np.sqrt(QDiag[0]**2 + QDiag[1]**2)
-    PosInfo["Vdop"] = QDiag[2]
-    PosInfo["Pdop"] = np.sqrt(QDiag[0]**2 + QDiag[1]**2 + QDiag[2]**2)
-    PosInfo["Tdop"] = QDiag[3]
+    PosInfo["Hdop"] = np.sqrt(QDiag[0] + QDiag[1])
+    PosInfo["Vdop"] = np.sqrt(QDiag[2])
+    PosInfo["Pdop"] = np.sqrt(QDiag[0] + QDiag[1] + QDiag[2])
+    PosInfo["Tdop"] = np.sqrt(QDiag[3])
 
 def buildSMatrix(GMatrix, WMatrix):
 

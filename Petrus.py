@@ -47,6 +47,7 @@ from COMMON.Dates import convertJulianDay2YearMonthDay
 from COMMON.Dates import convertYearMonthDay2Doy
 from PreprocessingPlots import generatePreproPlots
 from CorrectionsPlots import generateCorrPlots
+from PosPlots import generatePosPlots
 
 #----------------------------------------------------------------------
 # INTERNAL FUNCTIONS
@@ -275,15 +276,15 @@ for Rcvr in RcvrInfo.keys():
             generateCorrPlots(CorrFile, SatFile, RcvrInfo[Rcvr])
 
         # If SPVT outputs are requested
-        # if Conf["SPVT_OUT"] == 1:
+        if Conf["SPVT_OUT"] == 1:
             # Close POS output file
-            # fpos.close()
+            fpos.close()
 
             # Display Message
-            # print("INFO: Reading file: %s and generating POS figures..." % PosFile)
+            print("INFO: Reading file: %s and generating POS figures..." % PosFile)
 
             # Generate POS plots
-            # generatePosPlots(PosFile, RcvrInfo[Rcvr])
+            generatePosPlots(Conf, PosFile)
         
         # If PERF outputs are requested
         # if Conf["PERF_OUT"] == 1:

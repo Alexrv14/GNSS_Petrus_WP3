@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
 ########################################################################
-# PETRUS/SRC/Preprocessing.py:
-# This is the Inputs (conf and input files) Module of PETRUS tool
+# PETRUS/SRC/ConPlots.py:
+# This is the ConPlots Module of PETRUS tool
 #
-#  Project:        PETRUS
-#  File:           Preprocessing.py
-#  Date(YY/MM/DD): 01/02/21
+# Project:        PETRUS
+# File:           ConPlots.py
+# Date(YY/MM/DD): 01/02/21
 #
-#  Author: GNSS Academy
-#  Copyright 2021 GNSS Academy
+# Author: GNSS Academy
+# Copyright 2021 GNSS Academy
 #
 # -----------------------------------------------------------------
 # Date       | Author             | Action
@@ -55,4 +55,14 @@ ConfCorr["PLOT_SIGMA_UERE_STAT"] = 0
 ConfCorr["PLOT_RCVR_CLK"] = 0
 ConfCorr["PLOT_RES"] = 0
 ConfCorr["PLOT_SIGMA_UERE_STATS"] = 0
+
+# Position plots configuration flags
+ConfPos = OrderedDict({})
+ConfPos["PLOT_DOP"] = 0
+ConfPos["PLOT_ERR_vs_LIM"] = 0
+ConfPos["PLOT_ERROR"] = 0
+ConfPos["PLOT_HPE_vs_HDOP"] = 0
+ConfPos["PLOT_SAF_INDEX"] = 0
+ConfPos["PLOT_HOR_STANDFORD"] = 1
+ConfPos["PLOT_VER_STANDFORD"] = 0
 
