@@ -250,6 +250,46 @@ PosIdx["VDOP"]=19
 PosIdx["PDOP"]=20
 PosIdx["TDOP"]=21
 
+# PERFORMANCES
+# Header
+PerfHdr = "#RCVR LON        LAT        DOY   SERVICE  SAMSOL SAMNOSOL AVAIL   CONTRISK   NOTAVAIL NSVMIN NSVMAX HPERMS     VPERMS     HPE95      VPE95      HPEMAX     VPEMAX     EXTVPE     HPLMIN     VPLMIN     HPLMAX     VPLMAX     HSIMAX     VSIMAX     NMI NHMI PDOPMAX    HDOPMAX    VDOPMAX     \n"
+
+# Line format
+PerfFmt = "%s %10.5f %10.5f %5d %8s %5d %5d %7.3f %10.3e %5d %3d %3d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %7.3f %7.3f %3d %3d %10.3f %10.3f %10.3f".split()
+
+# File columns
+PerfIdx = OrderedDict({})
+PerfIdx["RCVR"]=0
+PerfIdx["LON"]=1
+PerfIdx["LAT"]=2
+PerfIdx["DOY"]=3
+PerfIdx["SERVICE"]=4
+PerfIdx["SAMSOL"]=5
+PerfIdx["SAMNOSOL"]=6
+PerfIdx["AVAIL"]=7
+PerfIdx["CONTRISK"]=8
+PerfIdx["NOTAVAIL"]=9
+PerfIdx["NSVMIN"]=10
+PerfIdx["NSVMAX"]=11
+PerfIdx["HPERMS"]=12
+PerfIdx["VPERMS"]=13
+PerfIdx["HPE95"]=14
+PerfIdx["VPE95"]=15
+PerfIdx["HPEMAX"]=16
+PerfIdx["VPEMAX"]=17
+PerfIdx["EXTVPE"]=18
+PerfIdx["HPLMIN"]=19
+PerfIdx["VPLMIN"]=20
+PerfIdx["HPLMAX"]=21
+PerfIdx["VPLMAX"]=22
+PerfIdx["HSIMAX"]=23
+PerfIdx["VSIMAX"]=24
+PerfIdx["NMI"]=25
+PerfIdx["NHMI"]=26
+PerfIdx["PDOPMAX"]=27
+PerfIdx["HDOPMAX"]=28
+PerfIdx["VDOPMAX"]=29
+
 # Input functions
 #----------------------------------------------------------------------
 def checkConfParam(Key, Fields, MinFields, MaxFields, LowLim, UppLim):
@@ -1456,3 +1496,62 @@ def generatePosFile(fpos, PosInfo, Rcvr):
         fpos.write("\n")
 
 # End of generatePosFile
+
+def generatePerfFile(fperf, PerfInfo, Rcvr):
+
+    # Purpose: generate output file with Performance results
+
+    # Parameters
+    # ==========
+    # fperf: file descriptor
+    #        Descriptor for Performances output file
+    # PerfInfo: dict
+    #           Dictionary containing Performances info for Rcvr 
+    # Rcvr: Receiver acronym
+
+    # Returns
+    # =======
+    # Nothing
+
+    if len(PerfInfo) > 0:
+        # Prepare outputs
+        Outputs = OrderedDict({})
+        Outputs["RCVR"] = Rcvr
+        Outputs["LON"] = PerfInfo["Lon"]
+        Outputs["LAT"] = PerfInfo["Lat"]
+        Outputs["DOY"] = PerfInfo["Doy"]
+        Outputs["SERVICE"] = PerfInfo["Service"]
+        Outputs["SAMSOL"] = PerfInfo["SamSol"]
+        Outputs["SAMNOSOL"] = PerfInfo["SamNoSol"]
+        Outputs["AVAIL"] = PerfInfo["Avail"]
+        Outputs["CONTRISK"] = PerfInfo["ContRisk"]
+        Outputs["NOTAVAIL"] = PerfInfo["NotAvail"]
+        Outputs["NSVMIN"] = PerfInfo["NsvMin"]
+        Outputs["NSVMAX"] = PerfInfo["NsvMax"]
+        Outputs["HPERMS"] = PerfInfo["HpeRms"]
+        Outputs["VPERMS"] = PerfInfo["VpeRms"]
+        Outputs["HPE95"] = PerfInfo["Hpe95"]
+        Outputs["VPE95"] = PerfInfo["Vpe95"]
+        Outputs["HPEMAX"] = PerfInfo["HpeMax"]
+        Outputs["VPEMAX"] = PerfInfo["VpeMax"]
+        Outputs["EXTVPE"] = PerfInfo["ExtVpe"]
+        Outputs["HPLMIN"] = PerfInfo["HplMin"]
+        Outputs["VPLMIN"] = PerfInfo["VplMin"]
+        Outputs["HPLMAX"] = PerfInfo["HplMax"]
+        Outputs["VPLMAX"] = PerfInfo["VplMax"]
+        Outputs["HSIMAX"] = PerfInfo["HsiMax"]
+        Outputs["VSIMAX"] = PerfInfo["VsiMax"]
+        Outputs["NMI"] = PerfInfo["Nmi"]
+        Outputs["NHMI"] = PerfInfo["Nhmi"]
+        Outputs["PDOPMAX"] = PerfInfo["PdopMax"]
+        Outputs["HDOPMAX"] = PerfInfo["HdopMax"]
+        Outputs["VDOPMAX"] = PerfInfo["VdopMax"]
+
+
+        # Write line
+        for i, result in enumerate(Outputs):
+            fperf.write(((PerfFmt[i] + " ") % Outputs[result]))
+
+        fperf.write("\n")
+
+# End of generatePerfFile

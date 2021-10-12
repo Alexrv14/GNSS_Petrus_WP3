@@ -37,7 +37,8 @@ from InputOutput import readCorrectInputs
 from InputOutput import generatePreproFile
 from InputOutput import generateCorrFile
 from InputOutput import generatePosFile
-from InputOutput import PreproHdr, CorrHdr, PosHdr
+from InputOutput import generatePerfFile
+from InputOutput import PreproHdr, CorrHdr, PosHdr, PerfHdr
 from InputOutput import CSNEPOCHS
 from InputOutput import ObsIdx
 from Preprocessing import runPreProcMeas
@@ -140,12 +141,12 @@ for Rcvr in RcvrInfo.keys():
             fpos = createOutputFile(PosFile, PosHdr)
 
         # If Performances outputs are activated
-        # if Conf["PERF_OUT"] == 1:
+        if Conf["PERF_OUT"] == 1:
             # Define the full path and name to the output PERF file
-            # PerfFile = Scen + '/OUT/PERF/' + "PERF_%s_Y%02dD%03d.dat" % (Rcvr, Year % 100, Doy)
+            PerfFile = Scen + '/OUT/PERF/' + "PERF_%s_Y%02dD%03d.dat" % (Rcvr, Year % 100, Doy)
 
             # Create output file
-            # fperf = createOutputFile(PerfFile, PerfHdr)
+            fperf = createOutputFile(PerfFile, PerfHdr)
 
         # Define the full path and name to the SAT file to read and open the file
         SatFile = Scen + '/OUT/SAT/' + "SAT_%s_Y%02dD%03d.dat" % (Rcvr, Year % 100, Doy)
@@ -158,6 +159,7 @@ for Rcvr in RcvrInfo.keys():
         # Initialize Variables
         EndOfFile = False
         ObsInfo = [None]
+        Services = ["OS", "APVI", "LPV200", "CATI", "NPA", "MARITIME", "CUSTOM"]
         PrevPreproObsInfo = {}
         for prn in range(1, Const.MAX_NUM_SATS_CONSTEL + 1):
             PrevPreproObsInfo["G%02d" % prn] = {
@@ -253,6 +255,18 @@ for Rcvr in RcvrInfo.keys():
                                 # Generate output file
                                 generatePosFile(fpos, PosInfo, Rcvr)
 
+                        # Compute the performances for activated service levels
+                        # ----------------------------------------------------------
+                        # Check activated services
+                        # for Service in Services:
+                            # if Conf[Service][0] == 1:
+                                # PerfInfo = computePerformances(Conf, PosInfo, Service)
+
+                                # If PERF outputs are requested
+                                # if Conf["PERF_OUT"] == 1:
+                                    # Generate output file
+                                    # generatePerfFile(fperf, PerfInfo, Rcvr)
+
                 # End if ObsInfo != []:
                 else:
                     EndOfFile = True
@@ -301,7 +315,7 @@ for Rcvr in RcvrInfo.keys():
             if Conf["NPA"][0] == 1:
                 generatePosPlots(PosFile, Mode = "NPA")
         
-        # If PERF outputs are requested
+        # If PERF outputs are requested 
         # if Conf["PERF_OUT"] == 1:
             # Close PERF output file
             # fperf.close()
@@ -310,7 +324,9 @@ for Rcvr in RcvrInfo.keys():
             # print("INFO: Reading file: %s and generating PERF figures..." % PerfFile)
 
             # Generate PERF plots
-            # generatePerfPlots(PerfFile, RcvrInfo[Rcvr])
+            # for Service in Services:
+                # If Conf[Service][0] == 1:
+                    # generatePerfPlots(PerfFile)
 
         # Close input files
         fsat.close()
