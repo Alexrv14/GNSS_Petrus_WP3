@@ -1463,37 +1463,36 @@ def generatePosFile(fpos, PosInfo, Rcvr):
     # =======
     # Nothing
 
-    if len(PosInfo) > 0:
-        # Prepare outputs
-        Outputs = OrderedDict({})
-        Outputs["SOD"] = PosInfo["Sod"]
-        Outputs["DOY"] = PosInfo["Doy"]
-        Outputs["RCVR"] = Rcvr
-        Outputs["LON"] = PosInfo["Lon"]
-        Outputs["LAT"] = PosInfo["Lat"]
-        Outputs["ALT"] = PosInfo["Alt"]
-        Outputs["CLK"] = PosInfo["Clk"]
-        Outputs["SOL"] = PosInfo["Sol"]
-        Outputs["NSV"] = PosInfo["NumSatVis"]
-        Outputs["NSV-SOL"] = PosInfo["NumSatSol"]
-        Outputs["HPE"] = PosInfo["Hpe"]
-        Outputs["VPE"] = PosInfo["Vpe"]
-        Outputs["EPE"] = PosInfo["Epe"]
-        Outputs["NPE"] = PosInfo["Npe"]
-        Outputs["HPL"] = PosInfo["Hpl"]
-        Outputs["VPL"] = PosInfo["Vpl"]
-        Outputs["HSI"] = PosInfo["Hsi"]
-        Outputs["VSI"] = PosInfo["Vsi"]
-        Outputs["HDOP"] = PosInfo["Hdop"]
-        Outputs["VDOP"] = PosInfo["Vdop"]
-        Outputs["PDOP"] = PosInfo["Pdop"]
-        Outputs["TDOP"] = PosInfo["Tdop"]
+    # Prepare outputs
+    Outputs = OrderedDict({})
+    Outputs["SOD"] = PosInfo["Sod"]
+    Outputs["DOY"] = PosInfo["Doy"]
+    Outputs["RCVR"] = Rcvr
+    Outputs["LON"] = PosInfo["Lon"]
+    Outputs["LAT"] = PosInfo["Lat"]
+    Outputs["ALT"] = PosInfo["Alt"]
+    Outputs["CLK"] = PosInfo["Clk"]
+    Outputs["SOL"] = PosInfo["Sol"]
+    Outputs["NSV"] = PosInfo["NumSatVis"]
+    Outputs["NSV-SOL"] = PosInfo["NumSatSol"]
+    Outputs["HPE"] = PosInfo["Hpe"]
+    Outputs["VPE"] = PosInfo["Vpe"]
+    Outputs["EPE"] = PosInfo["Epe"]
+    Outputs["NPE"] = PosInfo["Npe"]
+    Outputs["HPL"] = PosInfo["Hpl"]
+    Outputs["VPL"] = PosInfo["Vpl"]
+    Outputs["HSI"] = PosInfo["Hsi"]
+    Outputs["VSI"] = PosInfo["Vsi"]
+    Outputs["HDOP"] = PosInfo["Hdop"]
+    Outputs["VDOP"] = PosInfo["Vdop"]
+    Outputs["PDOP"] = PosInfo["Pdop"]
+    Outputs["TDOP"] = PosInfo["Tdop"]
 
-        # Write line
-        for i, result in enumerate(Outputs):
-            fpos.write(((PosFmt[i] + " ") % Outputs[result]))
+    # Write line
+    for i, result in enumerate(Outputs):
+        fpos.write(((PosFmt[i] + " ") % Outputs[result]))
 
-        fpos.write("\n")
+    fpos.write("\n")
 
 # End of generatePosFile
 

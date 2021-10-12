@@ -44,7 +44,7 @@ from InputOutput import ObsIdx
 from Preprocessing import runPreProcMeas
 from Corrections import runCorrectMeas
 from Spvt import computeSpvtSolution
-from Perf import initializePerfInfo
+from Perf import initializePerfInfo, updatePerfEpoch, computeFinalPerf
 from COMMON.Dates import convertJulianDay2YearMonthDay
 from COMMON.Dates import convertYearMonthDay2Doy
 from PreprocessingPlots import generatePreproPlots
@@ -239,29 +239,37 @@ for Rcvr in RcvrInfo.keys():
                             # Generate output file
                             generateCorrFile(fcorr, CorrInfo)
 
-                        # Compute the spvt solution (PA and NPA)
+                        # Compute the spvt solution and intermediate performances (PA and NPA)
                         # ----------------------------------------------------------
                         # If only PA mode activated
                         PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo, Mode = "PA")
 
-                        # If SPVT outputs are requested
-                        if Conf["SPVT_OUT"] == 1:
-                            # Generate output file
-                            generatePosFile(fpos, PosInfo, Rcvr)
-
-                        # If NPA mode activated
-                        if Conf["NPA"][0] == 1:
-                            PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo, Mode = "NPA")
+                        # If Pos Info available
+                        if len(PosInfo) > 0:
+                            # Compute intermediate performances PA
+                            for Service, PerfInfoSer in PerfInfo.items():
+                                updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)
 
                             # If SPVT outputs are requested
                             if Conf["SPVT_OUT"] == 1:
                                 # Generate output file
                                 generatePosFile(fpos, PosInfo, Rcvr)
 
-                        # Compute intermediate performances
-                        # ----------------------------------------------------------
-                        # for Service, PerfInfoSer in PerfInfo.items():
-                            # computePerfEpoch(PerfInfoSer)
+                        # If NPA mode activated
+                        if Conf["NPA"][0] == 1:
+                            PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo, Mode = "NPA")
+
+                            # If position info available
+                            if len(PosInfo) > 0:
+                                # Compute intermediate performances NPA
+                                for Service, PerfInfoSer in PerfInfo.items():
+                                    if Service == "NPA":
+                                        updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)
+
+                                # If SPVT outputs are requested
+                                if Conf["SPVT_OUT"] == 1:
+                                    # Generate output file
+                                    generatePosFile(fpos, PosInfo, Rcvr)
 
                 # End if ObsInfo != []:
                 else:
@@ -312,16 +320,16 @@ for Rcvr in RcvrInfo.keys():
                 generatePosPlots(PosFile, Mode = "NPA")
         
         # If PERF outputs are requested 
-        # if Conf["PERF_OUT"] == 1:
+        if Conf["PERF_OUT"] == 1:
             # Compute final performances for each service level
-            # for Service, PerfInfoSer in PosInfo.items()
-                # computeFinalPerf(Conf[Service], PerfInfoSer)
+            for Service, PerfInfoSer in PerfInfo.items():
+                computeFinalPerf(PerfInfoSer)
             
                 # Generate output file
-                # generatePerfFile(fperf, PerfInfoSer)
+                generatePerfFile(fperf, PerfInfoSer)
             
             # Close PERF output file
-            # fperf.close()
+            fperf.close()
 
             # Display Message
             # print("INFO: Reading file: %s and generating PERF figures..." % PerfFile)
