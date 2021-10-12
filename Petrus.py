@@ -44,6 +44,7 @@ from InputOutput import ObsIdx
 from Preprocessing import runPreProcMeas
 from Corrections import runCorrectMeas
 from Spvt import computeSpvtSolution
+from Perf import initializePerfInfo
 from COMMON.Dates import convertJulianDay2YearMonthDay
 from COMMON.Dates import convertYearMonthDay2Doy
 from PreprocessingPlots import generatePreproPlots
@@ -159,7 +160,6 @@ for Rcvr in RcvrInfo.keys():
         # Initialize Variables
         EndOfFile = False
         ObsInfo = [None]
-        Services = ["OS", "APVI", "LPV200", "CATI", "NPA", "MARITIME", "CUSTOM"]
         PrevPreproObsInfo = {}
         for prn in range(1, Const.MAX_NUM_SATS_CONSTEL + 1):
             PrevPreproObsInfo["G%02d" % prn] = {
@@ -183,6 +183,9 @@ for Rcvr in RcvrInfo.keys():
             "PrevRej": 0,                                           # Previous Rejection flag
                                                                     # ...
         } # End of SatPreproObsInfo
+        Services = ["OS", "APVI", "LPV200", "CATI", "NPA", "MARITIME", "CUSTOM"]
+        PerfInfo = OrderedDict({})
+        initializePerfInfo(Conf, Services, Rcvr, RcvrInfo[Rcvr], Doy, PerfInfo)
         SodInputs = -1
 
         # Open OBS file
@@ -255,17 +258,10 @@ for Rcvr in RcvrInfo.keys():
                                 # Generate output file
                                 generatePosFile(fpos, PosInfo, Rcvr)
 
-                        # Compute the performances for activated service levels
+                        # Compute intermediate performances
                         # ----------------------------------------------------------
-                        # Check activated services
-                        # for Service in Services:
-                            # if Conf[Service][0] == 1:
-                                # PerfInfo = computePerformances(Conf, PosInfo, Service)
-
-                                # If PERF outputs are requested
-                                # if Conf["PERF_OUT"] == 1:
-                                    # Generate output file
-                                    # generatePerfFile(fperf, PerfInfo, Rcvr)
+                        # for Service, PerfInfoSer in PerfInfo.items():
+                            # computePerfEpoch(PerfInfoSer)
 
                 # End if ObsInfo != []:
                 else:
@@ -317,6 +313,13 @@ for Rcvr in RcvrInfo.keys():
         
         # If PERF outputs are requested 
         # if Conf["PERF_OUT"] == 1:
+            # Compute final performances for each service level
+            # for Service, PerfInfoSer in PosInfo.items()
+                # computeFinalPerf(Conf[Service], PerfInfoSer)
+            
+                # Generate output file
+                # generatePerfFile(fperf, PerfInfoSer)
+            
             # Close PERF output file
             # fperf.close()
 

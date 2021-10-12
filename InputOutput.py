@@ -1497,7 +1497,7 @@ def generatePosFile(fpos, PosInfo, Rcvr):
 
 # End of generatePosFile
 
-def generatePerfFile(fperf, PerfInfo, Rcvr):
+def generatePerfFile(fperf, PerfInfoSer):
 
     # Purpose: generate output file with Performance results
 
@@ -1513,45 +1513,43 @@ def generatePerfFile(fperf, PerfInfo, Rcvr):
     # =======
     # Nothing
 
-    if len(PerfInfo) > 0:
-        # Prepare outputs
-        Outputs = OrderedDict({})
-        Outputs["RCVR"] = Rcvr
-        Outputs["LON"] = PerfInfo["Lon"]
-        Outputs["LAT"] = PerfInfo["Lat"]
-        Outputs["DOY"] = PerfInfo["Doy"]
-        Outputs["SERVICE"] = PerfInfo["Service"]
-        Outputs["SAMSOL"] = PerfInfo["SamSol"]
-        Outputs["SAMNOSOL"] = PerfInfo["SamNoSol"]
-        Outputs["AVAIL"] = PerfInfo["Avail"]
-        Outputs["CONTRISK"] = PerfInfo["ContRisk"]
-        Outputs["NOTAVAIL"] = PerfInfo["NotAvail"]
-        Outputs["NSVMIN"] = PerfInfo["NsvMin"]
-        Outputs["NSVMAX"] = PerfInfo["NsvMax"]
-        Outputs["HPERMS"] = PerfInfo["HpeRms"]
-        Outputs["VPERMS"] = PerfInfo["VpeRms"]
-        Outputs["HPE95"] = PerfInfo["Hpe95"]
-        Outputs["VPE95"] = PerfInfo["Vpe95"]
-        Outputs["HPEMAX"] = PerfInfo["HpeMax"]
-        Outputs["VPEMAX"] = PerfInfo["VpeMax"]
-        Outputs["EXTVPE"] = PerfInfo["ExtVpe"]
-        Outputs["HPLMIN"] = PerfInfo["HplMin"]
-        Outputs["VPLMIN"] = PerfInfo["VplMin"]
-        Outputs["HPLMAX"] = PerfInfo["HplMax"]
-        Outputs["VPLMAX"] = PerfInfo["VplMax"]
-        Outputs["HSIMAX"] = PerfInfo["HsiMax"]
-        Outputs["VSIMAX"] = PerfInfo["VsiMax"]
-        Outputs["NMI"] = PerfInfo["Nmi"]
-        Outputs["NHMI"] = PerfInfo["Nhmi"]
-        Outputs["PDOPMAX"] = PerfInfo["PdopMax"]
-        Outputs["HDOPMAX"] = PerfInfo["HdopMax"]
-        Outputs["VDOPMAX"] = PerfInfo["VdopMax"]
+    # Prepare outputs
+    Outputs = OrderedDict({})
+    Outputs["RCVR"] = PerfInfoSer["Rcvr"]
+    Outputs["LON"] = PerfInfoSer["Lon"]
+    Outputs["LAT"] = PerfInfoSer["Lat"]
+    Outputs["DOY"] = PerfInfoSer["Doy"]
+    Outputs["SERVICE"] = PerfInfoSer["Service"]
+    Outputs["SAMSOL"] = PerfInfoSer["SamSol"]
+    Outputs["SAMNOSOL"] = PerfInfoSer["SamNoSol"]
+    Outputs["AVAIL"] = PerfInfoSer["Avail"]
+    Outputs["CONTRISK"] = PerfInfoSer["ContRisk"]
+    Outputs["NOTAVAIL"] = PerfInfoSer["NotAvail"]
+    Outputs["NSVMIN"] = PerfInfoSer["NsvMin"]
+    Outputs["NSVMAX"] = PerfInfoSer["NsvMax"]
+    Outputs["HPERMS"] = PerfInfoSer["HpeRms"]
+    Outputs["VPERMS"] = PerfInfoSer["VpeRms"]
+    Outputs["HPE95"] = PerfInfoSer["Hpe95"]
+    Outputs["VPE95"] = PerfInfoSer["Vpe95"]
+    Outputs["HPEMAX"] = PerfInfoSer["HpeMax"]
+    Outputs["VPEMAX"] = PerfInfoSer["VpeMax"]
+    Outputs["EXTVPE"] = PerfInfoSer["ExtVpe"]
+    Outputs["HPLMIN"] = PerfInfoSer["HplMin"]
+    Outputs["VPLMIN"] = PerfInfoSer["VplMin"]
+    Outputs["HPLMAX"] = PerfInfoSer["HplMax"]
+    Outputs["VPLMAX"] = PerfInfoSer["VplMax"]
+    Outputs["HSIMAX"] = PerfInfoSer["HsiMax"]
+    Outputs["VSIMAX"] = PerfInfoSer["VsiMax"]
+    Outputs["NMI"] = PerfInfoSer["Nmi"]
+    Outputs["NHMI"] = PerfInfoSer["Nhmi"]
+    Outputs["PDOPMAX"] = PerfInfoSer["PdopMax"]
+    Outputs["HDOPMAX"] = PerfInfoSer["HdopMax"]
+    Outputs["VDOPMAX"] = PerfInfoSer["VdopMax"]
 
+    # Write line
+    for i, result in enumerate(Outputs):
+        fperf.write(((PerfFmt[i] + " ") % Outputs[result]))
 
-        # Write line
-        for i, result in enumerate(Outputs):
-            fperf.write(((PerfFmt[i] + " ") % Outputs[result]))
-
-        fperf.write("\n")
+    fperf.write("\n")
 
 # End of generatePerfFile
