@@ -198,7 +198,7 @@ def computeSpvtSolution(Conf, RcvrInfo, CorrInfo, Mode):
             # If the satellite is only available for NPA and NPA mode is activated
             if SatCorrInfo["Flag"] == 2 and Mode == "NPA":
                 # Update number of available satellites for NPA
-                NumSatSolNPa = NumSatSolNPa + 1
+                NumSatSol = NumSatSol + 1
                 # Compute row of the geometry matrix G for satellite
                 GMatrixRows.append(buildGMatrix(SatCorrInfo))
                 # Compute diagonal element of the weighting matrix W for satellite

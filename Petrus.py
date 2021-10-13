@@ -38,13 +38,13 @@ from InputOutput import generatePreproFile
 from InputOutput import generateCorrFile
 from InputOutput import generatePosFile
 from InputOutput import generatePerfFile
-from InputOutput import PreproHdr, CorrHdr, PosHdr, PerfHdr
+from InputOutput import PreproHdr, CorrHdr, PosHdr, PerfHdr, HistHdr
 from InputOutput import CSNEPOCHS
 from InputOutput import ObsIdx
 from Preprocessing import runPreProcMeas
 from Corrections import runCorrectMeas
 from Spvt import computeSpvtSolution
-from Perf import initializePerfInfo, updatePerfEpoch, computeFinalPerf
+from Perf import initializePerfInfo, updatePerfEpoch, computeFinalPerf, computeVpeHist
 from COMMON.Dates import convertJulianDay2YearMonthDay
 from COMMON.Dates import convertYearMonthDay2Doy
 from PreprocessingPlots import generatePreproPlots
@@ -149,6 +149,14 @@ for Rcvr in RcvrInfo.keys():
             # Create output file
             fperf = createOutputFile(PerfFile, PerfHdr)
 
+        # If LPV200 VPE Histogram outputs are activated
+        if Conf["VPEHIST_OUT"] == 1:
+            # Define the full path and name to the output HIST file
+            HistFile = Scen + '/OUT/PERF/' + "VPE_HIST_%s_Y%02dD%03d.dat" % (Rcvr, Year % 100, Doy)
+
+            # Create output file
+            fhist = createOutputFile(HistFile, HistHdr)
+
         # Define the full path and name to the SAT file to read and open the file
         SatFile = Scen + '/OUT/SAT/' + "SAT_%s_Y%02dD%03d.dat" % (Rcvr, Year % 100, Doy)
         fsat = openInputFile(SatFile)
@@ -247,9 +255,10 @@ for Rcvr in RcvrInfo.keys():
 
                         # If Position information available
                         if len(PosInfo) > 0:
-                            # Compute intermediate performances for PA
+                            # Compute intermediate performances for PA services
                             for Service, PerfInfoSer in PerfInfo.items():
-                                updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)
+                                if Service != "NPA":
+                                    updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)
 
                             # If SPVT outputs are requested
                             if Conf["SPVT_OUT"] == 1:
@@ -262,7 +271,7 @@ for Rcvr in RcvrInfo.keys():
 
                             # If position information available
                             if len(PosInfo) > 0:
-                                # Compute intermediate performances for NPA
+                                # Compute intermediate performances for NPA services
                                 for Service, PerfInfoSer in PerfInfo.items():
                                     if Service == "NPA":
                                         updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)
@@ -336,9 +345,23 @@ for Rcvr in RcvrInfo.keys():
             # print("INFO: Reading file: %s and generating PERF figures..." % PerfFile)
 
             # Generate PERF plots
-            # for Service in Services:
-                # If Conf[Service][0] == 1:
-                    # generatePerfPlots(PerfFile)
+            # for Service in PerfInfo.keys():
+                # generatePerfPlots(PerfFile)
+
+        # If LPV200 VPE Histogram outputs are requested 
+        if Conf["VPEHIST_OUT"] == 1:
+            # Compute VPE Histogram and generate output file for each service level
+            computeVpeHist(fhist, PerfInfo, VpeHistInfo)
+            
+            # Close PERF output file
+            fhist.close()
+
+            # Display Message
+            # print("INFO: Reading file: %s and generating VPE Histogram..." % HistFile)
+
+            # Generate VPE Histogram plots
+            # for Service in VpeHistInfo.keys():
+                # generateHist(HistFile)
 
         # Close input files
         fsat.close()

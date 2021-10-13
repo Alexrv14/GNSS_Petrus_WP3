@@ -4,12 +4,12 @@
 # PETRUS/SRC/Perf.py:
 # This is the Performances Module of PETRUS tool
 #
-#  Project:        PETRUS
-#  File:           Perf.py
-#  Date(YY/MM/DD): 16/02/21
+# Project:        PETRUS
+# File:           Perf.py
+# Date(YY/MM/DD): 16/02/21
 #
-#  Author: GNSS Academy
-#  Copyright 2021 GNSS Academy
+# Author: GNSS Academy
+# Copyright 2021 GNSS Academy
 #
 # -----------------------------------------------------------------
 # Date       | Author             | Action
@@ -27,32 +27,36 @@ Common = os.path.dirname(os.path.dirname(
     os.path.abspath(sys.argv[0]))) + '/COMMON'
 sys.path.insert(0, Common)
 from InputOutput import RcvrIdx
-from COMMON import Stats
+from COMMON import Stats, GnssConstants
 from math import sqrt
+from collections import OrderedDict
+from InputOutput import generateHistFile
 
 # Performances internal functions
 #-----------------------------------------------------------------------
 
 def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInfo):
 
-    # Purpose: Initialize Performances Info for a given Rcvr
+    # Purpose: Initialize PerInfo for a given receiver for all activated service levels
+    #          Initialize LPV200 VpeHistInfo for a given receiver
 
     # Parameters
     # ==========
     # Conf: dict
-    #       Configuration dictionary
+    #       Configuration information dictionary
     # Services: list
-    #           List of service levels
+    #           List of available service levels
     # Rcvr: str
     #       Receiver acronym
     # RcvrInfo: list
-    #           Receiver information: position, masking angle...
+    #           List containing receiver information: position, masking angle...
     # Doy: int
-    #      Day of Year
+    #      Day of the year
     # PerInfo: dict
-    #          Dictionary 
+    #          Dictionary containing performances information per for all service levels
     # VpeHistInfo: dict
-    #              Dictionary containing VPE histogram info per service level
+    #              Dictionary containing VPE histogram information per for LPV200 
+    #              service level
 
     # Returns
     # =======
@@ -103,14 +107,18 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInf
                 "VdopMax": 0.0,                                     # Maximum VDOP
                 } # End of PerfInfo[Service]
 
-            # Initialize PerInfo dictionary
-            VpeHistInfo[Service] = {
-                "BinId": 0,                                         # Bin ID
-                "BinMin": 0.0,                                      # Bin minimum
-                "BinMax": 0.0,                                      # Bin maximum 
-                "BinNumSam": 0,                                     # Number of samples
-                "BinFreq": 0.0,                                     # Bin frequency
-                } # End of VpeHistInfo[Service]
+            if Service == "LPV200":
+                # Initialize LPV200 VpeHistInfo dictionary
+                VpeHistInfo["Rcvr"] = Rcvr                          # Receiver acronym
+                VpeHistInfo["Service"] = Service                    # Service level
+                VpeHistInfo["BinId"] = 0                            # Bin ID
+                VpeHistInfo["BinMin"] = 0.0                         # Bin minimum
+                VpeHistInfo["BinMax"] = 0.0                         # Bin maximum
+                VpeHistInfo["BinNumSam"] = 0                        # Bin number of samples
+                VpeHistInfo["BinFreq"] = 0.0                        # Bin relative frequency
+                # End of LPV200 VpeHistInfo
+            
+            # End of if(Service == "LPV200"):
 
         # End of if(Conf[Service][0] == 1)
 
@@ -120,28 +128,28 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInf
 
 def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
 
-    # Purpose: Update Performances Info for a given epoch
+    # Purpose: Update PerfInfo for a given epoch and service level
 
     # Parameters
     # ==========
     # Conf: list
-    #       List containing information associated to the service level
+    #       List containing configuration information associated to the activated service level
     # PosInfo: dict
-    #          Dictionary containing POS info per epoch in PA and NPA (when activated)
+    #          Dictionary containing position information per epoch in PA and NPA (when activated)
     # PerfInfoSer: dict
-    #              Dictionary containing PERF info per service level
+    #              Dictionary containing performances information per service level
 
     # Returns
     # =======
     # Nothing
 
     # Initialize internal variables
-    HistRes = 0.001
+    HistRes = GnssConstants.HIST_RES
     Idx = {"Flag": 0, "HAL": 1, "VAL": 2, "HPE95": 3, "VPE95": 4, "VPE1E7": 5, "AVAI": 6, "CONT": 7, "CINT": 8}
   
-    # If SBAS solution is available
-    # ----------------------------------------------------------------------
-    if PosInfo["Sol"] == 1:
+    # If SBAS solution has been achieved
+    if PosInfo["Sol"] != 0:
+
         # Update total number of samples with no SBAS solution
         # ----------------------------------------------------------------------
         PerfInfoSer["SamNoSol"] = PerfInfoSer["SamNoSol"] - 1
@@ -200,9 +208,9 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
             # Update HPE and VPE histograms 
             # ---------------------------------------------------------------------- 
             # Update HPE95 histogram
-            Stats.updateHist(PerfInfoSer["HpeHist"], PosInfo["Hpe"], HistRes)
+            Stats.updateHist(PerfInfoSer["HpeHist"], abs(PosInfo["Hpe"]), HistRes)
             # Update VPE95 histogram
-            Stats.updateHist(PerfInfoSer["VpeHist"], PosInfo["Vpe"], HistRes)
+            Stats.updateHist(PerfInfoSer["VpeHist"], abs(PosInfo["Vpe"]), HistRes)
 
             # Update maximum HPE and VPE values
             # ----------------------------------------------------------------------
@@ -216,20 +224,18 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
         # Update continuity risk
         # ---------------------------------------------------------------------- 
 
-    # End of if (PosInfo["Sol"] == 0):
+    # End of if (PosInfo["Sol"] != 0):
 
 # End of updatePerfEpoch:
 
 def computeFinalPerf(PerfInfoSer):
 
-    # Purpose: Compute final Performances Info for receiver
+    # Purpose: Compute final PerfInfo per service level
 
     # Parameters
     # ==========
-    # Conf: list
-    #       List containing information associated to the service level
     # PerfInfoSer: dict
-    #              Dictionary containing PERF info per service level
+    #              Dictionary containing performance information per service level
 
     # Returns
     # =======
@@ -270,5 +276,55 @@ def computeFinalPerf(PerfInfoSer):
     # Compute continuity
     # ----------------------------------------------------------------------
 
-    
     # End of computeFinalPerf:
+
+def computeVpeHist(fhist, PerfInfo, VpeHistInfo):
+
+    # Purpose: Compute final VpeHistInfo per for LPV200 service level
+    #          Generate the VPE output file
+
+    # Parameters
+    # ==========
+    # fhist: str
+    #        Path to VPE Histogram file
+    # PerfInfo: dict
+    #           Dictionary containing performances information for all service levels
+    # VpeHistInfo: dict
+    #              Dictionary containing VPE histogram information for LPV200 service level
+
+
+    # Returns
+    # =======
+    # Nothing
+
+    # Initialize internal variables
+    BinId = 0
+    HistRes = GnssConstants.HIST_RES
+
+    # Loop over all services levels in PerfInfo
+    for Service, PerfInfoSer in PerfInfo.items():
+        # If service == LPV200
+        if Service == "LPV200":
+            # Sort VPE histogram
+            SortedHist = OrderedDict({})
+            for key in sorted(PerfInfoSer["VpeHist"].keys()):
+                SortedHist[key] = PerfInfoSer["VpeHist"][key]
+
+            # Loop over the bins in VpeHist
+            for Bin, Samples in SortedHist.items():
+                # Compute VPE histogram statistics
+                VpeHistInfo["BinId"] = BinId
+                VpeHistInfo["BinNumSam"] = Samples
+                VpeHistInfo["BinFreq"] = VpeHistInfo["BinNumSam"]/(PerfInfoSer["SamSol"] - PerfInfoSer["NotAvail"])
+                VpeHistInfo["BinMin"] = Bin
+                VpeHistInfo["BinMax"] = (Bin/HistRes + (1 - HistRes))*HistRes
+                # Update Bin ID
+                BinId = BinId + 1
+                # Generate output file
+                generateHistFile(fhist, VpeHistInfo)
+
+            # End of for(Bin, Samples in SortedHist.items()):
+
+        # End of if(Service == "LPV200"):
+
+    # End of computeVpeHist:
