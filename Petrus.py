@@ -185,7 +185,8 @@ for Rcvr in RcvrInfo.keys():
         } # End of SatPreproObsInfo
         Services = ["OS", "APVI", "LPV200", "CATI", "NPA", "MARITIME", "CUSTOM"]
         PerfInfo = OrderedDict({})
-        initializePerfInfo(Conf, Services, Rcvr, RcvrInfo[Rcvr], Doy, PerfInfo)
+        VpeHistInfo = OrderedDict({})
+        initializePerfInfo(Conf, Services, Rcvr, RcvrInfo[Rcvr], Doy, PerfInfo, VpeHistInfo)
         SodInputs = -1
 
         # Open OBS file
@@ -239,14 +240,14 @@ for Rcvr in RcvrInfo.keys():
                             # Generate output file
                             generateCorrFile(fcorr, CorrInfo)
 
-                        # Compute the spvt solution and intermediate performances (PA and NPA)
+                        # Compute spvt solution and intermediate performances
                         # ----------------------------------------------------------
                         # If only PA mode activated
                         PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo, Mode = "PA")
 
-                        # If Pos Info available
+                        # If Position information available
                         if len(PosInfo) > 0:
-                            # Compute intermediate performances PA
+                            # Compute intermediate performances for PA
                             for Service, PerfInfoSer in PerfInfo.items():
                                 updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)
 
@@ -259,9 +260,9 @@ for Rcvr in RcvrInfo.keys():
                         if Conf["NPA"][0] == 1:
                             PosInfo = computeSpvtSolution(Conf, RcvrInfo[Rcvr], CorrInfo, Mode = "NPA")
 
-                            # If position info available
+                            # If position information available
                             if len(PosInfo) > 0:
-                                # Compute intermediate performances NPA
+                                # Compute intermediate performances for NPA
                                 for Service, PerfInfoSer in PerfInfo.items():
                                     if Service == "NPA":
                                         updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)

@@ -33,7 +33,7 @@ from math import sqrt
 # Performances internal functions
 #-----------------------------------------------------------------------
 
-def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo):
+def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInfo):
 
     # Purpose: Initialize Performances Info for a given Rcvr
 
@@ -41,16 +41,18 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo):
     # ==========
     # Conf: dict
     #       Configuration dictionary
+    # Services: list
+    #           List of service levels
     # Rcvr: str
     #       Receiver acronym
     # RcvrInfo: list
     #           Receiver information: position, masking angle...
     # Doy: int
     #      Day of Year
-    # Doy: int
-    #      Day of Year
-    # Services: list
-    #           List of service levels
+    # PerInfo: dict
+    #          Dictionary 
+    # VpeHistInfo: dict
+    #              Dictionary containing VPE histogram info per service level
 
     # Returns
     # =======
@@ -71,11 +73,11 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo):
                 "Lat": float(RcvrInfo[RcvrIdx["LAT"]]),             # Receiver reference latitude
                 "Doy": Doy,                                         # Day of year
                 "Service": Service,                                 # Service level
-                "SamSol": int(86000/int(Conf["SAMPLING_RATE"])),    # Number of total samples processed
-                "SamNoSol": int(86000/int(Conf["SAMPLING_RATE"])),  # Number of samples with no SBAS solution
+                "SamSol": int(86400/int(Conf["SAMPLING_RATE"])),    # Number of total samples processed
+                "SamNoSol": int(86400/int(Conf["SAMPLING_RATE"])),  # Number of samples with no SBAS solution
                 "Avail": 0,                                         # Availability percentage
                 "ContRisk": 0.0,                                    # Continuity risk
-                "ContBuff": [0] * ContWindow,                       # Continuity buffer
+                "ContBuff": [0] * ContWindow,                       # Continuity risk buffer
                 "NotAvail": 0,                                      # Number of non-available samples for the selected service level
                 "NsvMin": 1000,                                     # Minimum number of satellites
                 "NsvMax": 0,                                        # Maximum number of satellites    
@@ -101,9 +103,18 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo):
                 "VdopMax": 0.0,                                     # Maximum VDOP
                 } # End of PerfInfo[Service]
 
+            # Initialize PerInfo dictionary
+            VpeHistInfo[Service] = {
+                "BinId": 0,                                         # Bin ID
+                "BinMin": 0.0,                                      # Bin minimum
+                "BinMax": 0.0,                                      # Bin maximum 
+                "BinNumSam": 0,                                     # Number of samples
+                "BinFreq": 0.0,                                     # Bin frequency
+                } # End of VpeHistInfo[Service]
+
         # End of if(Conf[Service][0] == 1)
 
-    # End of PerfInfo
+    # End for Service in Services:
 
 # End of initializePerfInfo:
 
@@ -156,9 +167,9 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
         # Update HSI and VSI values
         # ----------------------------------------------------------------------
         # Get maximum HSI
-        PerfInfoSer["HsiMax"] = Stats.updateMax(PerfInfoSer["HsiMax"], PosInfo["Hsi"])
+        PerfInfoSer["HsiMax"] = Stats.updateMax(PerfInfoSer["HsiMax"], abs(PosInfo["Hsi"]))
         # Get maximum VSI
-        PerfInfoSer["VsiMax"] = Stats.updateMax(PerfInfoSer["VsiMax"], PosInfo["Vsi"])
+        PerfInfoSer["VsiMax"] = Stats.updateMax(PerfInfoSer["VsiMax"], abs(PosInfo["Vsi"]))
 
         # Update DOPS
         # ----------------------------------------------------------------------
@@ -171,11 +182,12 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
 
         # Update availability
         # ----------------------------------------------------------------------
-        # Tag sample as non-available for selected service level
         if (PosInfo["Hpl"]/Conf[Idx["HAL"]]) > 1 or (PosInfo["Vpl"]/Conf[Idx["VAL"]]) > 1:
+            # Tag sample as non-available for selected service level
             PerfInfoSer["NotAvail"] = PerfInfoSer["NotAvail"] + 1
-        # Tag sample as available for selected service level
+        
         elif (PosInfo["Hpl"]/Conf[Idx["HAL"]]) < 1 and (PosInfo["Vpl"]/Conf[Idx["VAL"]]) < 1:
+            # Tag sample as available for selected service level
             PerfInfoSer["Avail"] = PerfInfoSer["Avail"] + 1
 
             # Update HPE and VPE RMS
@@ -185,7 +197,7 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
             # Get new contribution of VPE RMS
             PerfInfoSer["VpeRms"] = PerfInfoSer["VpeRms"] + PosInfo["Vpe"]**2
 
-            # Update HPE95 and VPE95 values
+            # Update HPE and VPE histograms 
             # ---------------------------------------------------------------------- 
             # Update HPE95 histogram
             Stats.updateHist(PerfInfoSer["HpeHist"], PosInfo["Hpe"], HistRes)
@@ -198,9 +210,6 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
             PerfInfoSer["HpeMax"] = Stats.updateMax(PerfInfoSer["HpeMax"], PosInfo["Hpe"])
             # Get maximum VPE
             PerfInfoSer["VpeMax"] = Stats.updateMax(PerfInfoSer["VpeMax"], PosInfo["Vpe"])
-
-            # Update extrapolated VPE value
-            # ---------------------------------------------------------------------- 
 
         # End of if((PosInfo["Hpl"]/Conf["HAL"]) > 1 or (PosInfo["Vpl"]/Conf["VAL"]) > 1):
 
@@ -243,12 +252,16 @@ def computeFinalPerf(PerfInfoSer):
     # Compute final HPE95 and VPE95 values
     # ----------------------------------------------------------------------
     # Compute final HPE95
-    PerfInfoSer["Hpe95"] = Stats.computePercentile(Stats.computeCdfFromHistogram(PerfInfoSer["HpeHist"], PerfInfoSer["Avail"]), 95)
+    Cdf, Sigmas = Stats.computeCdfFromHistogram(PerfInfoSer["HpeHist"], PerfInfoSer["Avail"])
+    PerfInfoSer["Hpe95"] = Stats.computePercentile(Cdf, 95)
     # Compute final VPE95
-    PerfInfoSer["Vpe95"] = Stats.computePercentile(Stats.computeCdfFromHistogram(PerfInfoSer["VpeHist"], PerfInfoSer["Avail"]), 95)
+    Cdf, Sigmas = Stats.computeCdfFromHistogram(PerfInfoSer["VpeHist"], PerfInfoSer["Avail"])
+    PerfInfoSer["Vpe95"] = Stats.computePercentile(Cdf, 95)
     
     # Compute final extrapolated VPE value
     # ----------------------------------------------------------------------
+    ThresholdBin = Stats.computePercentile(Cdf, 60)
+    PerfInfoSer["ExtVpe"] = 5.33 * Stats.computeOverbound(Sigmas, ThresholdBin)
     
     # Compute availability
     # ----------------------------------------------------------------------
@@ -257,5 +270,5 @@ def computeFinalPerf(PerfInfoSer):
     # Compute continuity
     # ----------------------------------------------------------------------
 
-
+    
     # End of computeFinalPerf:
