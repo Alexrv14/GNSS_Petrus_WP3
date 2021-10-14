@@ -333,7 +333,7 @@ def computeFinalPerf(PerfInfoSer):
     # ----------------------------------------------------------------------
     PerfInfoSer["Avail"] = 100 * PerfInfoSer["Avail"]/PerfInfoSer["SamSol"]
 
-    # End of computeFinalPerf:
+# End of computeFinalPerf:
 
 def computeVpeHist(fhist, PerfInfo, VpeHistInfo):
 
@@ -358,30 +358,31 @@ def computeVpeHist(fhist, PerfInfo, VpeHistInfo):
     BinId = 0
     HistRes = GnssConstants.HIST_RES
 
-    # Loop over all services levels in PerfInfo
-    for Service, PerfInfoSer in PerfInfo.items():
-        # If service == LPV200
-        if Service == "LPV200":
-            # Sort VPE histogram
-            SortedHist = OrderedDict({})
-            for key in sorted(PerfInfoSer["VpeHist"].keys()):
-                SortedHist[key] = PerfInfoSer["VpeHist"][key]
+    # Check if LPV200 is activated
+    if "LPV200" not in PerfInfo.keys():
+        sys.stderr.write("ERROR: Please activate LPV200 service level for histogram computation \n")
+        sys.exit(1)
+    else:
+        # Sort LPV200 VPE histogram
+        SortedHist = OrderedDict({})
+        for key in sorted(PerfInfo["LPV200"]["VpeHist"].keys()):
+            SortedHist[key] = PerfInfo["LPV200"]["VpeHist"][key]
 
-            # Loop over the bins in VpeHist
-            for Bin, Samples in SortedHist.items():
-                # Compute VPE histogram statistics
-                VpeHistInfo["BinId"] = BinId
-                VpeHistInfo["BinNumSam"] = Samples
-                VpeHistInfo["BinFreq"] = VpeHistInfo["BinNumSam"]/(PerfInfoSer["SamSol"] - PerfInfoSer["NotAvail"])
-                VpeHistInfo["BinMin"] = Bin
-                VpeHistInfo["BinMax"] = (Bin/HistRes + (1 - HistRes))*HistRes
-                # Update Bin ID
-                BinId = BinId + 1
-                # Generate output file
-                generateHistFile(fhist, VpeHistInfo)
+        # Loop over the bins in VpeHist
+        for Bin, Samples in SortedHist.items():
+            # Compute VPE histogram statistics
+            VpeHistInfo["BinId"] = BinId
+            VpeHistInfo["BinNumSam"] = Samples
+            VpeHistInfo["BinFreq"] = VpeHistInfo["BinNumSam"]/(PerfInfo["LPV200"]["SamSol"] - PerfInfo["LPV200"]["NotAvail"])
+            VpeHistInfo["BinMin"] = Bin
+            VpeHistInfo["BinMax"] = (Bin/HistRes + (1 - HistRes))*HistRes
+            # Update Bin ID
+            BinId = BinId + 1
+            # Generate output file
+            generateHistFile(fhist, VpeHistInfo)
 
-            # End of for(Bin, Samples in SortedHist.items()):
+        # End of for(Bin, Samples in SortedHist.items()):
 
-        # End of if(Service == "LPV200"):
+    # End of if("LPV200" not in PerfInfo.keys()):
 
-    # End of computeVpeHist:
+# End of computeVpeHist:

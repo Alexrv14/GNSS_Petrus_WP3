@@ -50,6 +50,7 @@ from COMMON.Dates import convertYearMonthDay2Doy
 from PreprocessingPlots import generatePreproPlots
 from CorrectionsPlots import generateCorrPlots
 from PosPlots import generatePosPlots
+from PerfPlots import generateHistPlot
 
 #----------------------------------------------------------------------
 # INTERNAL FUNCTIONS
@@ -291,6 +292,18 @@ for Rcvr in RcvrInfo.keys():
     
         # End of with open(ObsFile, 'r') as f:
 
+        # Compute final performances
+        # ----------------------------------------------------------
+        for Service, PerfInfoSer in PerfInfo.items():
+            computeFinalPerf(PerfInfoSer)
+
+            if Conf["PERF_OUT"] == 1:
+                # Generate output file
+                generatePerfFile(fperf, PerfInfoSer)
+
+        # Outputs and Plotting
+        # ----------------------------------------------------------
+
         # If PREPRO outputs are requested
         if Conf["PREPRO_OUT"] == 1:
             # Close PREPRO output file
@@ -330,14 +343,7 @@ for Rcvr in RcvrInfo.keys():
                 generatePosPlots(PosFile, Mode = "NPA")
         
         # If PERF outputs are requested 
-        if Conf["PERF_OUT"] == 1:
-            # Compute final performances for each service level
-            for Service, PerfInfoSer in PerfInfo.items():
-                computeFinalPerf(PerfInfoSer)
-            
-                # Generate output file
-                generatePerfFile(fperf, PerfInfoSer)
-            
+        if Conf["PERF_OUT"] == 1:           
             # Close PERF output file
             fperf.close()
 
@@ -357,11 +363,10 @@ for Rcvr in RcvrInfo.keys():
             fhist.close()
 
             # Display Message
-            # print("INFO: Reading file: %s and generating VPE Histogram..." % HistFile)
+            print("INFO: Reading file: %s and generating VPE Histogram..." % HistFile)
 
             # Generate VPE Histogram plots
-            # for Service in VpeHistInfo.keys():
-                # generateHist(HistFile)
+            generateHistPlot(HistFile)
 
         # Close input files
         fsat.close()
