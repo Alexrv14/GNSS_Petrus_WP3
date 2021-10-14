@@ -219,6 +219,18 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
             # Get maximum VPE
             PerfInfoSer["VpeMax"] = Stats.updateMax(PerfInfoSer["VpeMax"], PosInfo["Vpe"])
 
+            # Update misleading information
+            # ----------------------------------------------------------------------
+            if PosInfo["Hsi"] >= 1 or abs(PosInfo["Vsi"]) >= 1:
+                if PosInfo["Hpe"] < Conf[Idx["HAL"]] and abs(PosInfo["Vpe"]) < Conf[Idx["VAL"]]:
+                    # Tag sample as misleading information
+                    PerfInfoSer["Nmi"] = PerfInfoSer["Nmi"] + 1
+                elif PosInfo["Hpe"] >= Conf[Idx["HAL"]] or abs(PosInfo["Vpe"]) >= Conf[Idx["VAL"]]:
+                    # Tag sample as hazardous misleading information
+                    PerfInfoSer["Nhmi"] = PerfInfoSer["Nhmi"] + 1
+
+            # End of if(PosInfo["Hsi"] >= 1 or abs(PosInfo["Vsi"]) >= 1):
+
         # End of if((PosInfo["Hpl"]/Conf["HAL"]) > 1 or (PosInfo["Vpl"]/Conf["VAL"]) > 1):
 
         # Update continuity risk
