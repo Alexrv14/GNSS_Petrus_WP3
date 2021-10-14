@@ -258,7 +258,7 @@ for Rcvr in RcvrInfo.keys():
                             # Compute intermediate performances for PA services
                             for Service, PerfInfoSer in PerfInfo.items():
                                 if Service != "NPA":
-                                    updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)
+                                    updatePerfEpoch(Conf, Service, PosInfo, PerfInfoSer)
 
                             # If SPVT outputs are requested
                             if Conf["SPVT_OUT"] == 1:
@@ -274,7 +274,7 @@ for Rcvr in RcvrInfo.keys():
                                 # Compute intermediate performances for NPA services
                                 for Service, PerfInfoSer in PerfInfo.items():
                                     if Service == "NPA":
-                                        updatePerfEpoch(Conf[Service], PosInfo, PerfInfoSer)
+                                        updatePerfEpoch(Conf, Service, PosInfo, PerfInfoSer)
 
                                 # If SPVT outputs are requested
                                 if Conf["SPVT_OUT"] == 1:

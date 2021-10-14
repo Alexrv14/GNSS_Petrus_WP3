@@ -35,6 +35,30 @@ from InputOutput import generateHistFile
 # Performances internal functions
 #-----------------------------------------------------------------------
 
+def updateBuff(ContBuff, Status):
+
+    # Function updating the continuity buffer per epoch
+
+    ContBuff.pop(0)
+    ContBuff.append(Status)
+
+# End of updateBuff
+
+def resetBuff(Status, Window):
+
+    # Function updating the continuity buffer per epoch
+
+    ContBuff = [0] * Window
+    updateBuff(ContBuff, Status)
+
+    return ContBuff
+
+# End of resetBuff
+
+# ----------------------------------------------------------------------
+# Performances main functions
+#-----------------------------------------------------------------------
+
 def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInfo):
 
     # Purpose: Initialize PerInfo for a given receiver for all activated service levels
@@ -63,13 +87,12 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInf
     # Nothing
 
     # Initialize internal variables
-    ContWindow = 15
-    Idx = {"Flag": 0, "HAL": 1, "VAL": 2, "HPE95": 3, "VPE95": 4, "VPE1E7": 5, "AVAI": 6, "CONT": 7, "CINT": 8}
+    Idx = {"FLAG": 0, "HAL": 1, "VAL": 2, "HPE95": 3, "VPE95": 4, "VPE1E7": 5, "AVAI": 6, "CONT": 7, "CINT": 8}
 
     # Loop over all the activated service levels
     for Service in Services:
         # If service activated
-        if Conf[Service][Idx["Flag"]] == 1:
+        if int(Conf[Service][Idx["FLAG"]]) == 1:
             # Initialize PerInfo dictionary
             PerfInfo[Service] = {
                 "Rcvr": Rcvr,                                       # Receiver acronym
@@ -77,11 +100,14 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInf
                 "Lat": float(RcvrInfo[RcvrIdx["LAT"]]),             # Receiver reference latitude
                 "Doy": Doy,                                         # Day of year
                 "Service": Service,                                 # Service level
-                "SamSol": int(86400/int(Conf["SAMPLING_RATE"])),    # Number of total samples processed
-                "SamNoSol": int(86400/int(Conf["SAMPLING_RATE"])),  # Number of samples with no SBAS solution
+                "SamSol": 86400 // int(Conf["SAMPLING_RATE"]),      # Number of total samples processed
+                "SamNoSol": 86400 // int(Conf["SAMPLING_RATE"]),    # Number of samples with no SBAS solution
                 "Avail": 0,                                         # Availability percentage
                 "ContRisk": 0.0,                                    # Continuity risk
-                "ContBuff": [0] * ContWindow,                       # Continuity risk buffer
+                "ContBuff": [0] * int(Conf[Service][Idx["CINT"]]),  # Continuity risk buffer
+                "PrevStatus": 0,                                    # Previous availability status
+                "PrevSod": 0.0,                                     # Previous computed epoch
+                "ContEvent": 0,                                     # Number of discontinuity events
                 "NotAvail": 0,                                      # Number of non-available samples for the selected service level
                 "NsvMin": 1000,                                     # Minimum number of satellites
                 "NsvMax": 0,                                        # Maximum number of satellites    
@@ -126,14 +152,16 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInf
 
 # End of initializePerfInfo:
 
-def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
+def updatePerfEpoch(Conf, Service, PosInfo, PerfInfoSer):
 
     # Purpose: Update PerfInfo for a given epoch and service level
 
     # Parameters
     # ==========
-    # Conf: list
-    #       List containing configuration information associated to the activated service level
+    # Conf: dict
+    #       Configuration information dictionary
+    # Service: str
+    #          Selected service level
     # PosInfo: dict
     #          Dictionary containing position information per epoch in PA and NPA (when activated)
     # PerfInfoSer: dict
@@ -145,11 +173,12 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
 
     # Initialize internal variables
     HistRes = GnssConstants.HIST_RES
-    Idx = {"Flag": 0, "HAL": 1, "VAL": 2, "HPE95": 3, "VPE95": 4, "VPE1E7": 5, "AVAI": 6, "CONT": 7, "CINT": 8}
-  
+    AvailStatus = 0
+    Idx = {"FLAG": 0, "HAL": 1, "VAL": 2, "HPE95": 3, "VPE95": 4, "VPE1E7": 5, "AVAI": 6, "CONT": 7, "CINT": 8}
+    
     # If SBAS solution has been achieved
     if PosInfo["Sol"] != 0:
-
+        
         # Update total number of samples with no SBAS solution
         # ----------------------------------------------------------------------
         PerfInfoSer["SamNoSol"] = PerfInfoSer["SamNoSol"] - 1
@@ -190,12 +219,13 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
 
         # Update availability
         # ----------------------------------------------------------------------
-        if (PosInfo["Hpl"]/Conf[Idx["HAL"]]) > 1 or (PosInfo["Vpl"]/Conf[Idx["VAL"]]) > 1:
+        if (PosInfo["Hpl"]/Conf[Service][Idx["HAL"]]) > 1 or (PosInfo["Vpl"]/Conf[Service][Idx["VAL"]]) > 1:
             # Tag sample as non-available for selected service level
             PerfInfoSer["NotAvail"] = PerfInfoSer["NotAvail"] + 1
-        
-        elif (PosInfo["Hpl"]/Conf[Idx["HAL"]]) < 1 and (PosInfo["Vpl"]/Conf[Idx["VAL"]]) < 1:
+
+        elif (PosInfo["Hpl"]/Conf[Service][Idx["HAL"]]) < 1 and (PosInfo["Vpl"]/Conf[Service][Idx["VAL"]]) < 1:
             # Tag sample as available for selected service level
+            AvailStatus = 1
             PerfInfoSer["Avail"] = PerfInfoSer["Avail"] + 1
 
             # Update HPE and VPE RMS
@@ -219,24 +249,41 @@ def updatePerfEpoch(Conf, PosInfo, PerfInfoSer):
             # Get maximum VPE
             PerfInfoSer["VpeMax"] = Stats.updateMax(PerfInfoSer["VpeMax"], PosInfo["Vpe"])
 
-            # Update misleading information
+            # Update misleading information events
             # ----------------------------------------------------------------------
             if PosInfo["Hsi"] >= 1 or abs(PosInfo["Vsi"]) >= 1:
-                if PosInfo["Hpe"] < Conf[Idx["HAL"]] and abs(PosInfo["Vpe"]) < Conf[Idx["VAL"]]:
-                    # Tag sample as misleading information
+                if PosInfo["Hpe"] < Conf[Service][Idx["HAL"]] and abs(PosInfo["Vpe"]) < Conf[Service][Idx["VAL"]]:
+                    # Tag sample as misleading information (MI)
                     PerfInfoSer["Nmi"] = PerfInfoSer["Nmi"] + 1
-                elif PosInfo["Hpe"] >= Conf[Idx["HAL"]] or abs(PosInfo["Vpe"]) >= Conf[Idx["VAL"]]:
-                    # Tag sample as hazardous misleading information
+                elif PosInfo["Hpe"] >= Conf[Service][Idx["HAL"]] or abs(PosInfo["Vpe"]) >= Conf[Service][Idx["VAL"]]:
+                    # Tag sample as hazardous misleading information (HMI)
                     PerfInfoSer["Nhmi"] = PerfInfoSer["Nhmi"] + 1
 
+                # End of if(PosInfo["Hpe"] < Conf[Idx["HAL"]] and abs(PosInfo["Vpe"]) < Conf[Idx["VAL"]]):
+            
             # End of if(PosInfo["Hsi"] >= 1 or abs(PosInfo["Vsi"]) >= 1):
 
         # End of if((PosInfo["Hpl"]/Conf["HAL"]) > 1 or (PosInfo["Vpl"]/Conf["VAL"]) > 1):
 
-        # Update continuity risk
-        # ---------------------------------------------------------------------- 
-
     # End of if (PosInfo["Sol"] != 0):
+    
+    # Update continuity risk
+    # ---------------------------------------------------------------------- 
+    # Update continuity buffer
+    updateBuff(PerfInfoSer["ContBuff"], AvailStatus)
+    # If jump from available to non-available status detected
+    if AvailStatus == 0 and PerfInfoSer["PrevStatus"] == 1:
+        # Update the number of discontinuity events 
+        PerfInfoSer["ContEvent"] = PerfInfoSer["ContEvent"] + sum(PerfInfoSer["ContBuff"])
+    # If data gap in performances information detected
+    if PerfInfoSer["PrevSod"] != 0.0 and (PosInfo["Sod"] - PerfInfoSer["PrevSod"]) > int(Conf["SAMPLING_RATE"]):
+        # Update the number of discontinuity events and reset continuity buffer
+        PerfInfoSer["ContEvent"] = PerfInfoSer["ContEvent"] + sum(PerfInfoSer["ContBuff"])
+        PerfInfoSer["ContBuff"] = resetBuff(AvailStatus, int(Conf[Service][Idx["CINT"]]))
+    
+    # Update previous availabilty status and previous computed epoch
+    PerfInfoSer["PrevStatus"] = AvailStatus
+    PerfInfoSer["PrevSod"] = PosInfo["Sod"]
 
 # End of updatePerfEpoch:
 
@@ -252,9 +299,6 @@ def computeFinalPerf(PerfInfoSer):
     # Returns
     # =======
     # Nothing
-
-    # Initialize internal variables
-    Idx = {"Flag": 0, "HAL": 1, "VAL": 2, "HPE95": 3, "VPE95": 4, "VPE1E7": 5, "AVAI": 6, "CONT": 7, "CINT": 8}
 
     # Compute final number of non-available samples
     # ----------------------------------------------------------------------
@@ -281,12 +325,13 @@ def computeFinalPerf(PerfInfoSer):
     ThresholdBin = Stats.computePercentile(Cdf, 60)
     PerfInfoSer["ExtVpe"] = 5.33 * Stats.computeOverbound(Sigmas, ThresholdBin)
     
+    # Compute continuity risk
+    # ----------------------------------------------------------------------
+    PerfInfoSer["ContRisk"] = PerfInfoSer["ContEvent"]/PerfInfoSer["Avail"]
+    
     # Compute availability
     # ----------------------------------------------------------------------
     PerfInfoSer["Avail"] = 100 * PerfInfoSer["Avail"]/PerfInfoSer["SamSol"]
-
-    # Compute continuity
-    # ----------------------------------------------------------------------
 
     # End of computeFinalPerf:
 
