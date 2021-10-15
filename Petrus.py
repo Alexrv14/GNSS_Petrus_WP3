@@ -50,7 +50,7 @@ from COMMON.Dates import convertYearMonthDay2Doy
 from PreprocessingPlots import generatePreproPlots
 from CorrectionsPlots import generateCorrPlots
 from PosPlots import generatePosPlots
-from PerfPlots import generateHistPlot
+from PerfPlots import generateHistPlot, generatePerfPlots
 
 #----------------------------------------------------------------------
 # INTERNAL FUNCTIONS
@@ -91,6 +91,9 @@ RcvrInfo = readRcvr(RcvrFile)
 print( '------------------------------------')
 print( '--> RUNNING PETRUS:')
 print( '------------------------------------')
+
+# Initialize Variables
+PerfFilesList = []
 
 # Loop over RCVRs
 #-----------------------------------------------------------------------
@@ -297,6 +300,7 @@ for Rcvr in RcvrInfo.keys():
         for Service, PerfInfoSer in PerfInfo.items():
             computeFinalPerf(PerfInfoSer)
 
+            # If PERF outputs are requested
             if Conf["PERF_OUT"] == 1:
                 # Generate output file
                 generatePerfFile(fperf, PerfInfoSer)
@@ -341,19 +345,15 @@ for Rcvr in RcvrInfo.keys():
             # If NPA mode also activated
             if Conf["NPA"][0] == 1:
                 generatePosPlots(PosFile, Mode = "NPA")
-        
-        # If PERF outputs are requested 
-        if Conf["PERF_OUT"] == 1:           
-            # Close PERF output file
+
+        # If PERF outputs are requested
+        if Conf["PERF_OUT"] == 1:
+        # Close PERF output file
             fperf.close()
 
-            # Display Message
-            # print("INFO: Reading file: %s and generating PERF figures..." % PerfFile)
-
-            # Generate PERF plots
-            # for Service in PerfInfo.keys():
-                # generatePerfPlots(PerfFile)
-
+            # Append file to PerFilesList
+            PerfFilesList.append(PerfFile)
+        
         # If LPV200 VPE Histogram outputs are requested 
         if Conf["VPEHIST_OUT"] == 1:
             # Compute VPE Histogram and generate output file for each service level
@@ -375,6 +375,16 @@ for Rcvr in RcvrInfo.keys():
     # End of JD loop
 
 # End of RCVR loop
+
+# If PERF outputs are requested 
+if Conf["PERF_OUT"] == 1:           
+    # Display Message
+    print( '\n------------------------------------')
+    print("INFO: Reading PerfFilesList and generating PERF figures for all receivers...")
+
+    # Generate PERF plots
+    for Service in PerfInfo.keys():
+        generatePerfPlots(Service, PerfFilesList)
 
 print( '\n------------------------------------')
 print( '--> END OF PETRUS ANALYSIS')
