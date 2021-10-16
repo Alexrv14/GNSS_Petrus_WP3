@@ -20,8 +20,6 @@
 import sys, os
 from pandas import read_csv
 from pandas import DataFrame
-from pandas.core.arrays.sparse import dtype
-from InputOutput import PosIdx
 sys.path.append(os.getcwd() + '/' + \
     os.path.dirname(sys.argv[0]) + '/' + 'COMMON')
 from COMMON import GnssConstants
@@ -29,6 +27,7 @@ from COMMON.Plots import generatePlot
 from InputOutput import HistIdx, PerfIdx
 from ConPlots import ConfPerf
 import numpy as np
+from scipy import stats
 
 def initPlot(PerfFilesList, PlotConf, Title, Label, Service):
     
@@ -50,8 +49,8 @@ def initHist(HistFile, PlotConf, Title, Label):
     # Compute information from HistFile
     HistFileName = os.path.basename(HistFile)
     HistFileNameSplit = HistFileName.split('_')
-    Rcvr = HistFileNameSplit[1]
-    DatepDat = HistFileNameSplit[2]
+    Rcvr = HistFileNameSplit[2]
+    DatepDat = HistFileNameSplit[3]
     Date = DatepDat.split('.')[0]
     Year = Date[1:3]
     Doy = Date[4:]
@@ -62,31 +61,6 @@ def initHist(HistFile, PlotConf, Title, Label):
     PlotConf["Title"] = "%s %s on Year %s DoY %s" % (Rcvr, Title, Year, Doy)
 
     PlotConf["Path"] = sys.argv[1] + '/OUT/PERF/Figures/%s/' % Label + '%s_%s_Y%sD%s.png' % (Label, Rcvr, Year, Doy)
-
-# Plot LPV200 VPE Histogram
-def plotVpeHistogram(HistFile, HistData):
-
-    # Graph settings definition
-    PlotConf = {}
-    initHist(HistFile, PlotConf, "LPV200 VPE Histogram", "LPV200_VPE_HISTOGRAM")
-
-    PlotConf["Type"] = "Hist"
-    PlotConf["FigSize"] = (14.4,8.4)
-
-    PlotConf["yLabel"] = "Relative Frequency PDF"
-
-    PlotConf["Grid"] = True
-    PlotConf["Legend"] = ["Max: " + str(max(sorted(HistData[HistIdx["BINMIN"]])))]
-
-    # Plotting
-    PlotConf["xData"] = {}
-    PlotConf["yData"] = {}
-    Label = 0
-    PlotConf["xData"][Label] = HistData[HistIdx["BINMIN"]]
-    PlotConf["yData"][Label] = HistData[HistIdx["BINFREQ"]]
-
-    # Call generatePlot from Plots library
-    generatePlot(PlotConf)
 
 # Plot availability map
 def plotAvailability(Service, PerfFilesList, PerfData):
@@ -769,7 +743,7 @@ def plotMaxVDOP(Service, PerfFilesList, PerfData):
 # PerfPlots main functions
 # ----------------------------------------------------------
 
-def generateHistPlot(HistFile):
+def generateHistPlot(PerfFile, HistFile):
     
     # Purpose: generate histograms regarding LPV200 VPE results
 
@@ -782,15 +756,62 @@ def generateHistPlot(HistFile):
     # =======
     # Nothing
 
+    # LPV200 VPE HISTOGRAM
+    # ----------------------------------------------------------
     if(ConfPerf["PLOT_VPE_HISTOGRAM"] == 1):
         # Read the cols we need from HistFile file
         HistData = read_csv(HistFile, delim_whitespace=True, skiprows=1, header=None,\
-        usecols=[HistIdx["BINMIN"],HistIdx["BINFREQ"]])
+        usecols=[HistIdx["BINMIN"], HistIdx["BINMAX"],HistIdx["BINFREQ"]])
+        PerfData = read_csv(PerfFile, delim_whitespace=True, skiprows=1, header=None,\
+        usecols=[PerfIdx["SERVICE"], PerfIdx["EXTVPE"]])
 
         print( 'Plot LPV200 VPE Histogram ...')
       
-        # Configure plot and call plot generation function
-        plotVpeHistogram(HistFile, HistData)
+        # Graph settings definition
+        PlotConf = {}
+        initHist(HistFile, PlotConf, "LPV200 VPE Histogram", "LPV200_VPE_HISTOGRAM")
+
+        PlotConf["Type"] = "Hist"
+        PlotConf["FigSize"] = (14.4,8.4)
+
+        PlotConf["yLabel"] = "Relative Frequency PDF"
+
+        PlotConf["Grid"] = True
+        PlotConf["BarWidth"] = GnssConstants.HIST_RES
+
+        # Prepare data to be plotted
+        FilterCond = PerfData[PerfIdx["SERVICE"]] == "LPV200"
+        ExtVpe = PerfData[PerfIdx["EXTVPE"]][FilterCond].to_numpy()
+        BinMin = HistData[HistIdx["BINMIN"]].to_numpy()
+        BinMax = HistData[HistIdx["BINMAX"]].to_numpy()
+        HistData = HistData[HistIdx["BINFREQ"]].to_numpy()
+
+        # Generate overbounding curve
+        xOver = np.arange(-max(BinMax), max(BinMax), GnssConstants.HIST_RES)
+        yOver = stats.norm.pdf(xOver, 0, ExtVpe[0]/5.33)
+        
+        # Normalize overbounding curve
+        # Norm = (max(yOver)-HistData[0])/HistData[0] + HistData[0]
+        Norm = (min(yOver)-HistData[-1])/HistData[-1] + HistData[-1]
+        xOverbound = []
+        yOverbound = []
+        for i in range(len(xOver)):
+            if xOver[i] >= 0:
+                xOverbound.append(xOver[i])
+                yOverbound.append(abs(yOver[i]-HistData[0])/(Norm-HistData[0]))
+
+        PlotConf["Legend"] = ["Gaussian Overbounding", "Min: " + str(min(BinMin)) + "\n" + "Max: " + str(max(BinMax))]
+    
+        # Plotting histogram
+        PlotConf["xData"] = BinMin
+        PlotConf["yData"] = HistData
+        
+        # Plotting overbounding curve
+        PlotConf["x2Data"] = xOverbound
+        PlotConf["y2Data"] = yOverbound
+
+        # Call generatePlot from Plots library
+        generatePlot(PlotConf)
 
 # End of generateHistPlot:
 

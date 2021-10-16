@@ -366,7 +366,7 @@ for Rcvr in RcvrInfo.keys():
             print("INFO: Reading file: %s and generating VPE Histogram..." % HistFile)
 
             # Generate VPE Histogram plots
-            generateHistPlot(HistFile)
+            generateHistPlot(PerfFile, HistFile)
 
         # Close input files
         fsat.close()

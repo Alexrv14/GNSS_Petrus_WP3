@@ -375,7 +375,7 @@ def computeVpeHist(fhist, PerfInfo, VpeHistInfo):
             VpeHistInfo["BinNumSam"] = Samples
             VpeHistInfo["BinFreq"] = VpeHistInfo["BinNumSam"]/(PerfInfo["LPV200"]["SamSol"] - PerfInfo["LPV200"]["NotAvail"])
             VpeHistInfo["BinMin"] = Bin
-            VpeHistInfo["BinMax"] = (Bin/HistRes + (1 - HistRes))*HistRes
+            VpeHistInfo["BinMax"] = (Bin//HistRes + 1) * HistRes
             # Update Bin ID
             BinId = BinId + 1
             # Generate output file
