@@ -275,8 +275,8 @@ def plotExtVPE(Service, PerfFilesList, PerfData):
     # Colorbar definition
     PlotConf["ColorBar"] = "gnuplot"
     PlotConf["ColorBarLabel"] = "Extrapolated VPE [m]"
-    PlotConf["ColorBarMin"] = min(ExtVpe)
-    PlotConf["ColorBarMax"] = max(ExtVpe)
+    PlotConf["ColorBarMin"] = 0.0
+    PlotConf["ColorBarMax"] = 10.0
     PlotConf["ColorBarTicks"] = None
 
     # Plotting
@@ -410,8 +410,8 @@ def plotMinHPL(Service, PerfFilesList, PerfData):
     # Colorbar definition
     PlotConf["ColorBar"] = "gnuplot"
     PlotConf["ColorBarLabel"] = "Minimum HPL [m]"
-    PlotConf["ColorBarMin"] = min(Hpl)
-    PlotConf["ColorBarMax"] = max(Hpl)
+    PlotConf["ColorBarMin"] = 0.0
+    PlotConf["ColorBarMax"] = 20.0
     PlotConf["ColorBarTicks"] = None
 
     # Plotting
@@ -455,8 +455,8 @@ def plotMinVPL(Service, PerfFilesList, PerfData):
     # Colorbar definition
     PlotConf["ColorBar"] = "gnuplot"
     PlotConf["ColorBarLabel"] = "Minimum VPL [m]"
-    PlotConf["ColorBarMin"] = min(Vpl)
-    PlotConf["ColorBarMax"] = max(Vpl)
+    PlotConf["ColorBarMin"] = 0.0
+    PlotConf["ColorBarMax"] = 20.0
     PlotConf["ColorBarTicks"] = None
 
     # Plotting
@@ -500,8 +500,8 @@ def plotMaxHPL(Service, PerfFilesList, PerfData):
     # Colorbar definition
     PlotConf["ColorBar"] = "gnuplot"
     PlotConf["ColorBarLabel"] = "Maximum HPL [m]"
-    PlotConf["ColorBarMin"] = min(Hpl)
-    PlotConf["ColorBarMax"] = max(Hpl)
+    PlotConf["ColorBarMin"] = 0.0
+    PlotConf["ColorBarMax"] = 200.0
     PlotConf["ColorBarTicks"] = None
 
     # Plotting
@@ -545,8 +545,8 @@ def plotMaxVPL(Service, PerfFilesList, PerfData):
     # Colorbar definition
     PlotConf["ColorBar"] = "gnuplot"
     PlotConf["ColorBarLabel"] = "Maximum VPL [m]"
-    PlotConf["ColorBarMin"] = min(Vpl)
-    PlotConf["ColorBarMax"] = max(Vpl)
+    PlotConf["ColorBarMin"] = 0.0
+    PlotConf["ColorBarMax"] = 200.0
     PlotConf["ColorBarTicks"] = None
 
     # Plotting
@@ -682,8 +682,8 @@ def plotMaxHDOP(Service, PerfFilesList, PerfData):
     # Colorbar definition
     PlotConf["ColorBar"] = "gnuplot"
     PlotConf["ColorBarLabel"] = "Maximum HDOP [m]"
-    PlotConf["ColorBarMin"] = min(Hdop)
-    PlotConf["ColorBarMax"] = max(Hdop)
+    PlotConf["ColorBarMin"] = 0.0
+    PlotConf["ColorBarMax"] = 20.0
     PlotConf["ColorBarTicks"] = None
 
     # Plotting
@@ -727,8 +727,8 @@ def plotMaxVDOP(Service, PerfFilesList, PerfData):
     # Colorbar definition
     PlotConf["ColorBar"] = "gnuplot"
     PlotConf["ColorBarLabel"] = "Maximum VDOP [m]"
-    PlotConf["ColorBarMin"] = min(Vdop)
-    PlotConf["ColorBarMax"] = max(Vdop)
+    PlotConf["ColorBarMin"] = 0.0
+    PlotConf["ColorBarMax"] = 20.0
     PlotConf["ColorBarTicks"] = None
 
     # Plotting
@@ -791,14 +791,13 @@ def generateHistPlot(PerfFile, HistFile):
         yOver = stats.norm.pdf(xOver, 0, ExtVpe[0]/5.33)
         
         # Normalize overbounding curve
-        # Norm = (max(yOver)-HistData[0])/HistData[0] + HistData[0]
         Norm = (min(yOver)-HistData[-1])/HistData[-1] + HistData[-1]
         xOverbound = []
         yOverbound = []
         for i in range(len(xOver)):
             if xOver[i] >= 0:
                 xOverbound.append(xOver[i])
-                yOverbound.append(abs(yOver[i]-HistData[0])/(Norm-HistData[0]))
+                yOverbound.append(abs((yOver[i]-HistData[0])/(Norm-HistData[0])))
 
         PlotConf["Legend"] = ["Gaussian Overbounding", "Min: " + str(min(BinMin)) + "\n" + "Max: " + str(max(BinMax))]
     
@@ -857,7 +856,7 @@ def generatePerfPlots(Service, PerfFilesList):
             # Append information to PerfData
             PerfData = PerfData.append(NewData, ignore_index = True)
 
-        print( 'Plot Continuity RIsk Map in ' + Service + '...')
+        print( 'Plot Continuity Risk Map in ' + Service + '...')
       
         # Configure plot and call plot generation function
         plotContRisk(Service, PerfFilesList, PerfData)

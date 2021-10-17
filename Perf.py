@@ -35,25 +35,15 @@ from InputOutput import generateHistFile
 # Performances internal functions
 #-----------------------------------------------------------------------
 
-def updateBuff(ContBuff, Status):
+def updateBuff(ContBuff, Status, Epochs):
 
     # Function updating the continuity buffer per epoch
 
-    ContBuff.pop(0)
-    ContBuff.append(Status)
+    for Epoch in range(int(Epochs)):
+        ContBuff.pop(0)
+        ContBuff.append(Status)
 
 # End of updateBuff
-
-def resetBuff(Status, Window):
-
-    # Function updating the continuity buffer per epoch
-
-    ContBuff = [0] * Window
-    updateBuff(ContBuff, Status)
-
-    return ContBuff
-
-# End of resetBuff
 
 # ----------------------------------------------------------------------
 # Performances main functions
@@ -107,7 +97,7 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInf
                 "ContBuff": [0] * int(Conf[Service][Idx["CINT"]]),  # Continuity risk buffer
                 "PrevStatus": 0,                                    # Previous availability status
                 "PrevSod": 0.0,                                     # Previous computed epoch
-                "ContEvent": 0,                                     # Number of discontinuity events
+                "ContEvent": 0,                                     # Number of discontinuity events                                 
                 "NotAvail": 0,                                      # Number of non-available samples for the selected service level
                 "NsvMin": 1000,                                     # Minimum number of satellites
                 "NsvMax": 0,                                        # Maximum number of satellites    
@@ -269,18 +259,22 @@ def updatePerfEpoch(Conf, Service, PosInfo, PerfInfoSer):
     
     # Update continuity risk
     # ---------------------------------------------------------------------- 
-    # Update continuity buffer
-    updateBuff(PerfInfoSer["ContBuff"], AvailStatus)
-    # If jump from available to non-available status detected
+    # Update number of discontinuity events if jump from available to non-available status detected
     if AvailStatus == 0 and PerfInfoSer["PrevStatus"] == 1:
-        # Update the number of discontinuity events 
         PerfInfoSer["ContEvent"] = PerfInfoSer["ContEvent"] + sum(PerfInfoSer["ContBuff"])
-    # If data gap in performances information detected
-    if PerfInfoSer["PrevSod"] != 0.0 and (PosInfo["Sod"] - PerfInfoSer["PrevSod"]) > int(Conf["SAMPLING_RATE"]):
-        # Update the number of discontinuity events and reset continuity buffer
+    # Update number of discontinuity events if data gap in performances information detected
+    gap = PosInfo["Sod"] - PerfInfoSer["PrevSod"]
+    if PerfInfoSer["PrevSod"] != 0.0 and gap > int(Conf["SAMPLING_RATE"]):
         PerfInfoSer["ContEvent"] = PerfInfoSer["ContEvent"] + sum(PerfInfoSer["ContBuff"])
-        PerfInfoSer["ContBuff"] = resetBuff(AvailStatus, int(Conf[Service][Idx["CINT"]]))
+        # Include gap in the continuity buffer if the Hatch Filter has not been reset
+        if gap < int(Conf["HATCH_GAP_TH"]):
+            updateBuff(PerfInfoSer["ContBuff"], 0, gap)
+        # Reset the continuity buffer if the Hatch Filter has been reset
+        elif gap >= int(Conf["HATCH_GAP_TH"]):
+            PerfInfoSer["ContBuff"] = [0] * int(Conf[Service][Idx["CINT"]])
     
+    # Update continuity buffer with current availability status
+    updateBuff(PerfInfoSer["ContBuff"], AvailStatus, 1)
     # Update previous availabilty status and previous computed epoch
     PerfInfoSer["PrevStatus"] = AvailStatus
     PerfInfoSer["PrevSod"] = PosInfo["Sod"]
@@ -304,34 +298,47 @@ def computeFinalPerf(PerfInfoSer):
     # ----------------------------------------------------------------------
     PerfInfoSer["NotAvail"] = PerfInfoSer["NotAvail"] + PerfInfoSer["SamNoSol"]
     
-    # Compute final HPE and VPE RMS
-    # ----------------------------------------------------------------------
-    # Compute HPE RMS
-    PerfInfoSer["HpeRms"] = sqrt(PerfInfoSer["HpeRms"]/PerfInfoSer["Avail"])
-    # Compute VPE RMS
-    PerfInfoSer["VpeRms"] = sqrt(PerfInfoSer["VpeRms"]/PerfInfoSer["Avail"])
+    # If the are at least one sample available
+    if PerfInfoSer["Avail"] > 0:
     
-    # Compute final HPE95 and VPE95 values
-    # ----------------------------------------------------------------------
-    # Compute final HPE95
-    Cdf, Sigmas = Stats.computeCdfFromHistogram(PerfInfoSer["HpeHist"], PerfInfoSer["Avail"])
-    PerfInfoSer["Hpe95"] = Stats.computePercentile(Cdf, 95)
-    # Compute final VPE95
-    Cdf, Sigmas = Stats.computeCdfFromHistogram(PerfInfoSer["VpeHist"], PerfInfoSer["Avail"])
-    PerfInfoSer["Vpe95"] = Stats.computePercentile(Cdf, 95)
+        # Compute final HPE and VPE RMS
+        # ----------------------------------------------------------------------
+        # Compute HPE RMS
+        PerfInfoSer["HpeRms"] = sqrt(PerfInfoSer["HpeRms"]/PerfInfoSer["Avail"])
+        # Compute VPE RMS
+        PerfInfoSer["VpeRms"] = sqrt(PerfInfoSer["VpeRms"]/PerfInfoSer["Avail"])
     
-    # Compute final extrapolated VPE value
-    # ----------------------------------------------------------------------
-    ThresholdBin = Stats.computePercentile(Cdf, 60)
-    PerfInfoSer["ExtVpe"] = 5.33 * Stats.computeOverbound(Sigmas, ThresholdBin)
+        # Compute final HPE95 and VPE95 values
+        # ----------------------------------------------------------------------
+        # Compute final HPE95
+        Cdf, Sigmas = Stats.computeCdfFromHistogram(PerfInfoSer["HpeHist"], PerfInfoSer["Avail"])
+        PerfInfoSer["Hpe95"] = Stats.computePercentile(Cdf, 95)
+        # Compute final VPE95
+        Cdf, Sigmas = Stats.computeCdfFromHistogram(PerfInfoSer["VpeHist"], PerfInfoSer["Avail"])
+        PerfInfoSer["Vpe95"] = Stats.computePercentile(Cdf, 95)
     
-    # Compute continuity risk
-    # ----------------------------------------------------------------------
-    PerfInfoSer["ContRisk"] = PerfInfoSer["ContEvent"]/PerfInfoSer["Avail"]
+        # Compute final extrapolated VPE value
+        # ----------------------------------------------------------------------
+        ThresholdBin = Stats.computePercentile(Cdf, 60)
+        PerfInfoSer["ExtVpe"] = 5.33 * Stats.computeOverbound(Sigmas, ThresholdBin)
     
-    # Compute availability
-    # ----------------------------------------------------------------------
-    PerfInfoSer["Avail"] = 100 * PerfInfoSer["Avail"]/PerfInfoSer["SamSol"]
+        # Compute continuity risk
+        # ----------------------------------------------------------------------
+        PerfInfoSer["ContRisk"] = PerfInfoSer["ContEvent"]/PerfInfoSer["Avail"]
+    
+        # Compute availability
+        # ----------------------------------------------------------------------
+        PerfInfoSer["Avail"] = 100 * PerfInfoSer["Avail"]/PerfInfoSer["SamSol"]
+    
+    # If there are no samples available
+    elif PerfInfoSer["Avail"] == 0:
+        PerfInfoSer["HpeRms"] = 0.0
+        PerfInfoSer["VpeRms"] = 0.0
+        PerfInfoSer["Hpe95"] = 0.0
+        PerfInfoSer["Vpe95"] = 0.0
+        PerfInfoSer["ExtVpe"] = 0.0
+        PerfInfoSer["ContRisk"] = 0.0
+        PerfInfoSer["Avail"] = 0.0
 
 # End of computeFinalPerf:
 
