@@ -140,6 +140,13 @@ def initializePerfInfo(Conf, Services, Rcvr, RcvrInfo, Doy, PerfInfo, VpeHistInf
 
     # End for Service in Services:
 
+    # Check if there are active service levels
+    if len(PerfInfo.keys()) == 0:
+        sys.stderr.write("ERROR: Please activate at least one service level in the configuration file \n")
+        sys.exit(1)
+
+    # End of if(len(PerfInfo.keys()) == 0):
+
 # End of initializePerfInfo:
 
 def updatePerfEpoch(Conf, Service, PosInfo, PerfInfoSer):
@@ -340,9 +347,11 @@ def computeFinalPerf(PerfInfoSer):
         PerfInfoSer["ContRisk"] = 0.0
         PerfInfoSer["Avail"] = 0.0
 
+    # End of if(PerfInfoSer["Avail"] > 0):
+
 # End of computeFinalPerf:
 
-def computeVpeHist(fhist, PerfInfo, VpeHistInfo):
+def computeVpeHist(fhist, PerfLPV200, VpeHistInfo):
 
     # Purpose: Compute final VpeHistInfo per for LPV200 service level
     #          Generate the VPE output file
@@ -351,8 +360,8 @@ def computeVpeHist(fhist, PerfInfo, VpeHistInfo):
     # ==========
     # fhist: str
     #        Path to VPE Histogram file
-    # PerfInfo: dict
-    #           Dictionary containing performances information for all service levels
+    # PerfLPV200: dict
+    #             Dictionary containing performances information for LPV200 service level
     # VpeHistInfo: dict
     #              Dictionary containing VPE histogram information for LPV200 service level
 
@@ -365,31 +374,24 @@ def computeVpeHist(fhist, PerfInfo, VpeHistInfo):
     BinId = 0
     HistRes = GnssConstants.HIST_RES
 
-    # Check if LPV200 is activated
-    if "LPV200" not in PerfInfo.keys():
-        sys.stderr.write("ERROR: Please activate LPV200 service level for histogram computation \n")
-        sys.exit(1)
-    else:
-        # Sort LPV200 VPE histogram
-        SortedHist = OrderedDict({})
-        for key in sorted(PerfInfo["LPV200"]["VpeHist"].keys()):
-            SortedHist[key] = PerfInfo["LPV200"]["VpeHist"][key]
+    # Sort LPV200 VPE histogram
+    SortedHist = OrderedDict({})
+    for key in sorted(PerfLPV200["VpeHist"].keys()):
+        SortedHist[key] = PerfLPV200["VpeHist"][key]
 
-        # Loop over the bins in VpeHist
-        for Bin, Samples in SortedHist.items():
-            # Compute VPE histogram statistics
-            VpeHistInfo["BinId"] = BinId
-            VpeHistInfo["BinNumSam"] = Samples
-            VpeHistInfo["BinFreq"] = VpeHistInfo["BinNumSam"]/(PerfInfo["LPV200"]["SamSol"] - PerfInfo["LPV200"]["NotAvail"])
-            VpeHistInfo["BinMin"] = Bin
-            VpeHistInfo["BinMax"] = (Bin//HistRes + 1) * HistRes
-            # Update Bin ID
-            BinId = BinId + 1
-            # Generate output file
-            generateHistFile(fhist, VpeHistInfo)
+    # Loop over the bins in VpeHist
+    for Bin, Samples in SortedHist.items():
+        # Compute VPE histogram statistics
+        VpeHistInfo["BinId"] = BinId
+        VpeHistInfo["BinNumSam"] = Samples
+        VpeHistInfo["BinFreq"] = VpeHistInfo["BinNumSam"]/(PerfLPV200["SamSol"] - PerfLPV200["NotAvail"])
+        VpeHistInfo["BinMin"] = Bin
+        VpeHistInfo["BinMax"] = (Bin//HistRes + 1) * HistRes
+        # Update Bin ID
+        BinId = BinId + 1
+        # Generate output file
+        generateHistFile(fhist, VpeHistInfo)
 
-        # End of for(Bin, Samples in SortedHist.items()):
-
-    # End of if("LPV200" not in PerfInfo.keys()):
+    # End of for(Bin, Samples in SortedHist.items()):
 
 # End of computeVpeHist:

@@ -743,12 +743,14 @@ def plotMaxVDOP(Service, PerfFilesList, PerfData):
 # PerfPlots main functions
 # ----------------------------------------------------------
 
-def generateHistPlot(PerfFile, HistFile):
+def generateHistPlot(LPV200ExtVpe, HistFile):
     
     # Purpose: generate histograms regarding LPV200 VPE results
 
     # Parameters
     # ==========
+    # LPV200ExtVpe: float
+    #               Extrapolated VPE for LPV200
     # HistFile: str
     #           Path to LPV200 VPE Histogram output file
 
@@ -762,8 +764,6 @@ def generateHistPlot(PerfFile, HistFile):
         # Read the cols we need from HistFile file
         HistData = read_csv(HistFile, delim_whitespace=True, skiprows=1, header=None,\
         usecols=[HistIdx["BINMIN"], HistIdx["BINMAX"],HistIdx["BINFREQ"]])
-        PerfData = read_csv(PerfFile, delim_whitespace=True, skiprows=1, header=None,\
-        usecols=[PerfIdx["SERVICE"], PerfIdx["EXTVPE"]])
 
         print( 'Plot LPV200 VPE Histogram ...')
       
@@ -780,24 +780,27 @@ def generateHistPlot(PerfFile, HistFile):
         PlotConf["BarWidth"] = GnssConstants.HIST_RES
 
         # Prepare data to be plotted
-        FilterCond = PerfData[PerfIdx["SERVICE"]] == "LPV200"
-        ExtVpe = PerfData[PerfIdx["EXTVPE"]][FilterCond].to_numpy()
         BinMin = HistData[HistIdx["BINMIN"]].to_numpy()
         BinMax = HistData[HistIdx["BINMAX"]].to_numpy()
         HistData = HistData[HistIdx["BINFREQ"]].to_numpy()
 
+        # Compute area under the histogram
+        AreaHist = 0.0
+        for element in HistData:
+            AreaHist = AreaHist + GnssConstants.HIST_RES * element
+
         # Generate overbounding curve
         xOver = np.arange(-max(BinMax), max(BinMax), GnssConstants.HIST_RES)
-        yOver = stats.norm.pdf(xOver, 0, ExtVpe[0]/5.33)
+        yOver = stats.norm.pdf(xOver, 0, LPV200ExtVpe/5.33)
         
         # Normalize overbounding curve
-        Norm = (min(yOver)-HistData[-1])/HistData[-1] + HistData[-1]
+        Norm = AreaHist
         xOverbound = []
         yOverbound = []
         for i in range(len(xOver)):
             if xOver[i] >= 0:
                 xOverbound.append(xOver[i])
-                yOverbound.append(abs((yOver[i]-HistData[0])/(Norm-HistData[0])))
+                yOverbound.append(2*Norm*yOver[i])
 
         PlotConf["Legend"] = ["Gaussian Overbounding", "Min: " + str(min(BinMin)) + "\n" + "Max: " + str(max(BinMax))]
     

@@ -356,8 +356,13 @@ for Rcvr in RcvrInfo.keys():
         
         # If LPV200 VPE Histogram outputs are requested 
         if Conf["VPEHIST_OUT"] == 1:
-            # Compute VPE Histogram and generate output file for each service level
-            computeVpeHist(fhist, PerfInfo, VpeHistInfo)
+            # Check if LPV200 service level is activated
+            if "LPV200" not in PerfInfo.keys():
+                sys.stderr.write("ERROR: Please activate LPV200 service level for LPV200 VPE histogram computation \n")
+                sys.exit(1)
+
+            # Compute VPE Histogram and generate output file for LPV200 service level
+            computeVpeHist(fhist, PerfInfo["LPV200"], VpeHistInfo)
             
             # Close PERF output file
             fhist.close()
@@ -366,7 +371,7 @@ for Rcvr in RcvrInfo.keys():
             print("INFO: Reading file: %s and generating VPE Histogram..." % HistFile)
 
             # Generate VPE Histogram plots
-            generateHistPlot(PerfFile, HistFile)
+            generateHistPlot(PerfInfo["LPV200"]["ExtVpe"], HistFile)
 
         # Close input files
         fsat.close()
